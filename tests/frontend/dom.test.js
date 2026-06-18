@@ -48,6 +48,12 @@ describe('DOM & Frontend SPA Integration Tests', () => {
         // Polyfills & stubs
         win.scrollTo = jest.fn();
         win.requestAnimationFrame = (cb) => setTimeout(cb, 0);
+        win.setInterval = jest.fn();
+
+        const originalSetTimeout = win.setTimeout;
+        win.setTimeout = (cb, delay) => {
+          return originalSetTimeout(cb, delay >= 100 ? 0 : delay);
+        };
 
         // Mock Chart.js
         win.Chart = class MockChart { constructor() {} };
@@ -64,14 +70,14 @@ describe('DOM & Frontend SPA Integration Tests', () => {
         // Inject Emissions module
         const emissionsPath = path.resolve(__dirname, '../../public/js/emissions.js');
         win.Emissions = require(emissionsPath);
-
-        // Inject app.js flat at window scope (no IIFE — function declarations hoist)
-        win.eval(APP_JS_CODE);
       }
     });
 
     window   = dom.window;
     document = dom.window.document;
+
+    // Inject app.js flat at window scope (no IIFE — function declarations hoist)
+    window.eval(APP_JS_CODE);
 
     // Pre-authenticate
     window.sessionStorage.setItem('authToken', 'mock-token');
@@ -210,6 +216,28 @@ describe('DOM & Frontend SPA Integration Tests', () => {
     test('rec-grid should have role=list after recommendations render', () => {
       const grid = document.getElementById('rec-grid');
       expect(grid.getAttribute('role')).toBe('list');
+    });
+  });
+
+  // =========================================================================
+  describe('Personal AI Guide Integration', () => {
+    test('should dynamically construct system prompt containing current calculator footprint', () => {
+      document.getElementById('sl-car').value = '50';
+      document.getElementById('sl-elec').value = '200';
+      window.updateCalc();
+      
+      const prompt = window.getDynamicSystemPrompt();
+      expect(prompt).toContain('Car: 50 km/day');
+      expect(prompt).toContain('Elec: 200 kWh/month');
+      expect(prompt).toContain('calculated annual carbon footprint');
+    });
+
+    test('should update live footprint card inside chat page when calculator updates', () => {
+      document.getElementById('sl-car').value = '100';
+      window.updateCalc();
+      
+      const chatTotal = document.getElementById('chat-stats-total').textContent;
+      expect(parseFloat(chatTotal)).toBeGreaterThan(3.6);
     });
   });
 });

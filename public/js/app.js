@@ -10,8 +10,6 @@
    =================================================================== */
 const CHAT_API_PROXY = '/api/chat';
 
-const SYSTEM_PROMPT = `You are GreenGuide, an expert AI carbon footprint coach for Indians. The user's current footprint is 3.6 tonnes CO₂/year. India average is 3.8t. The 1.5°C target is 2.5t. Give practical, India-specific advice. Keep responses concise (3-5 sentences max), friendly, and actionable. Use specific numbers where possible. Mention Indian context (grid emission factor 0.82 kg/kWh, Indian diet, Indian transport options like metro/auto/cycle). Use occasional Hindi words naturally (like "bilkul", "bahut achha").`;
-
 /* ===================================================================
    SPA ROUTING — with a11y: title update, live region, focus management
    =================================================================== */
@@ -62,12 +60,23 @@ function showPage(id) {
     }
   });
 
+  document.querySelectorAll('.mobile-nav-link').forEach(l => {
+    l.classList.remove('active');
+    if (l.dataset.page === id) {
+      l.classList.add('active');
+    }
+  });
+
   window.scrollTo(0, 0);
 
   // Move keyboard focus to the new page for screen readers
   if (target) {
     target.setAttribute('tabindex', '-1');
     target.focus({ preventScroll: true });
+  }
+
+  if (id === 'chat') {
+    updateChatStatsUI();
   }
 }
 
@@ -293,6 +302,10 @@ function updateCalc() {
   bd.innerHTML = items.map(([n, v]) =>
     `<div class="rb-row"><span>${n}</span><span>${v} t</span></div><div class="rb-bar"><div class="rb-fill" style="width:${Math.min(100, Math.round(v / (results.total || 1) * 100))}%"></div></div>`
   ).join('');
+
+  if (typeof updateChatStatsUI === 'function') {
+    updateChatStatsUI();
+  }
 }
 updateCalc();
 
@@ -500,6 +513,97 @@ function setFilter(el, filter) {
    =================================================================== */
 let chatHistory = [];
 
+const DEFAULT_SYSTEM_PROMPT = `You are GreenGuide, an expert AI carbon footprint coach for Indians. The user's current footprint is 3.6 tonnes CO₂/year. India average is 3.8t. The 1.5°C target is 2.5t. Give practical, India-specific advice. Keep responses concise (3-5 sentences max), friendly, and actionable. Use specific numbers where possible. Mention Indian context (grid emission factor 0.82 kg/kWh, Indian diet, Indian transport options like metro/auto/cycle). Use occasional Hindi words naturally (like "bilkul", "bahut achha").`;
+
+function getDynamicSystemPrompt() {
+  const carEl = document.getElementById('sl-car');
+  if (!carEl) return DEFAULT_SYSTEM_PROMPT;
+
+  const car    = +carEl.value;
+  const bike   = +document.getElementById('sl-bike').value;
+  const fly    = +document.getElementById('sl-fly').value;
+  const train  = +document.getElementById('sl-train').value;
+  const elec   = +document.getElementById('sl-elec').value;
+  const lpg    = +document.getElementById('sl-lpg').value;
+  const meat   = +document.getElementById('sl-meat').value;
+  const dairy  = +document.getElementById('sl-dairy').value;
+  const cloth  = +document.getElementById('sl-cloth').value;
+  const elects = +document.getElementById('sl-elects').value;
+
+  const results = window.Emissions.calcAnnual({ car, bike, fly, train, elec, lpg, meat, dairy, cloth, elects });
+
+  return `You are GreenGuide, an expert AI carbon footprint coach for Indians.
+The user's current calculated annual carbon footprint is ${results.total} tonnes CO₂/year.
+Breakdown:
+- Transport: ${results.transport} tonnes CO₂/year (Inputs: Car: ${car} km/day, Bike: ${bike} km/day, Flights: ${fly}/year, Train: ${train} trips/month)
+- Energy: ${results.energy} tonnes CO₂/year (Inputs: Elec: ${elec} kWh/month, LPG: ${lpg} cylinders/month)
+- Food: ${results.food} tonnes CO₂/year (Inputs: Meat meals: ${meat}/week, Dairy portions: ${dairy}/day)
+- Shopping & Lifestyle: ${results.shopping} tonnes CO₂/year (Inputs: Clothes: ${cloth}/month, Electronics: ₹${elects}k/year)
+
+India average footprint is 3.8 tonnes CO₂/year. The 1.5°C climate target is 2.5 tonnes CO₂/year.
+Give practical, India-specific advice based on these exact values. Point out which category is their highest and offer specific reduction strategies for their inputs.
+Keep responses concise (3-5 sentences max), friendly, and actionable. Use specific numbers where possible. Mention Indian context (grid emission factor 0.82 kg/kWh, Indian diet, Indian transport options like metro/auto/cycle). Use occasional Hindi words naturally (like "bilkul", "bahut achha").`;
+}
+
+function updateChatStatsUI() {
+  const carEl = document.getElementById('sl-car');
+  if (!carEl) return;
+  const car    = +carEl.value;
+  const bike   = +document.getElementById('sl-bike').value;
+  const fly    = +document.getElementById('sl-fly').value;
+  const train  = +document.getElementById('sl-train').value;
+  const elec   = +document.getElementById('sl-elec').value;
+  const lpg    = +document.getElementById('sl-lpg').value;
+  const meat   = +document.getElementById('sl-meat').value;
+  const dairy  = +document.getElementById('sl-dairy').value;
+  const cloth  = +document.getElementById('sl-cloth').value;
+  const elects = +document.getElementById('sl-elects').value;
+
+  const results = window.Emissions.calcAnnual({ car, bike, fly, train, elec, lpg, meat, dairy, cloth, elects });
+
+  const totalEl = document.getElementById('chat-stats-total');
+  if (totalEl) totalEl.textContent = results.total;
+
+  const meterEl = document.getElementById('chat-stats-meter');
+  if (meterEl) {
+    const pct = Math.min(100, Math.round(results.total / 7 * 100));
+    meterEl.style.width = pct + '%';
+    meterEl.style.background = results.total <= 2.5 ? '#4caf50' : results.total <= 4 ? '#f59e0b' : '#ef4444';
+  }
+
+  const labelEl = document.getElementById('chat-stats-label');
+  if (labelEl) {
+    const lbl = results.total <= 2.5
+      ? 'Below 1.5°C target (2.5t) — excellent!'
+      : results.total <= 3.8
+      ? 'Below India average (3.8t) · Above 1.5°C target'
+      : 'Above India average (3.8t) — room to improve';
+    labelEl.textContent = lbl;
+  }
+
+  const bdEl = document.getElementById('chat-stats-breakdown');
+  if (bdEl) {
+    const items = [
+      { name: 'Transport', value: results.transport, color: '#ef4444' },
+      { name: 'Home energy', value: results.energy, color: '#f59e0b' },
+      { name: 'Food & diet', value: results.food, color: '#4caf50' },
+      { name: 'Shopping', value: results.shopping, color: '#8b5cf6' }
+    ];
+    bdEl.innerHTML = items.map(item => {
+      const sharePct = Math.min(100, Math.round(item.value / (results.total || 1) * 100));
+      return `
+        <div style="font-size:12px; display:flex; justify-content:space-between; margin-bottom:2px">
+          <span>${item.name}</span>
+          <span style="font-weight:600">${item.value} t</span>
+        </div>
+        <div class="prog-bar" style="height:4px; margin-top:0; margin-bottom:4px; background: rgba(0,0,0,0.04)">
+          <div class="prog-fill" style="width: ${sharePct}%; background: ${item.color}"></div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
 async function sendAIMessage(text) {
   const input = document.getElementById('chat-input');
   if (text && input) input.value = text;
@@ -543,7 +647,7 @@ async function sendChat() {
     const res = await fetch(CHAT_API_PROXY, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': token ? `Bearer ${token}` : '' },
-      body: JSON.stringify({ system: SYSTEM_PROMPT, messages: chatHistory })
+      body: JSON.stringify({ system: getDynamicSystemPrompt(), messages: chatHistory })
     });
 
     if (res.ok) {

@@ -39,10 +39,11 @@ app.use(helmet({
       defaultSrc:  ["'self'"],
       scriptSrc:   [
         "'self'",
-        // Chart.js from cdnjs with SRI enforced by the browser
-        "https://cdnjs.cloudflare.com",
+        "'unsafe-inline'",
       ],
-      styleSrc:    ["'self'", "https://fonts.googleapis.com"],
+      scriptSrcAttr: ["'unsafe-inline'"],
+      styleSrc:    ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      styleSrcAttr: ["'unsafe-inline'"],
       fontSrc:     ["'self'", "https://fonts.gstatic.com"],
       imgSrc:      ["'self'", "data:", "https://*"],
       connectSrc:  ["'self'"],
@@ -95,14 +96,19 @@ function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token      = authHeader && authHeader.split(' ')[1]; // Bearer <token>
 
+  console.log(`[AUTH] Token length: ${token ? token.length : 0}`);
+
   if (!token) {
+    console.warn('[AUTH] Access denied: Token missing.');
     return res.status(401).json({ error: 'Access denied: Token missing.' });
   }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
+      console.error('[AUTH] Token verification failed:', err.message);
       return res.status(403).json({ error: 'Invalid or expired token.' });
     }
+    console.log(`[AUTH] Token verified successfully for user: ${user.email}`);
     req.user = user;
     next();
   });
@@ -113,7 +119,8 @@ function authenticateToken(req, res, next) {
    ------------------------------------------------------------------ */
 const loginLimiter = rateLimit({
   windowMs:      15 * 60 * 1000,
-  max:           process.env.NODE_ENV === 'test' ? 100 : 5,
+  max:           (process.env.NODE_ENV === 'production') ? 5 : 100,
+  skip:          (req) => process.env.NODE_ENV === 'test' && !req.headers['x-test-rate-limit'],
   standardHeaders: true,
   legacyHeaders:   false,
   message: { error: 'Too many login attempts from this IP. Please try again after 15 minutes.' }
@@ -122,6 +129,7 @@ const loginLimiter = rateLimit({
 const chatLimiter = rateLimit({
   windowMs:      15 * 60 * 1000,
   max:           30,
+  skip:          (req) => process.env.NODE_ENV === 'test' && !req.headers['x-test-rate-limit'],
   standardHeaders: true,
   legacyHeaders:   false,
   message: { error: 'Too many chat requests from this IP. Please try again after 15 minutes.' }
@@ -136,7 +144,7 @@ const chatLimiter = rateLimit({
    ------------------------------------------------------------------ */
 const defaultEmail        = (process.env.ADMIN_EMAIL || 'gaurav@carbontrack.in').toLowerCase();
 const defaultPasswordHash = process.env.ADMIN_PASSWORD_HASH ||
-  '$2a$12$LIBAd1BKgx4mz0TQpkNhbuY2O1JxS7L/yKKJDJGVQQh4vlqc7kFjq'; // bcrypt of 'greenplanet2026'
+  '$2b$12$AR/noeZpftNSXZ2z6GYymOQeONIaigNu2gwk9WAzWAh/MR0M.2rJK'; // bcrypt of 'greenplanet2026'
 
 /* ------------------------------------------------------------------
    POST /api/login
@@ -179,16 +187,19 @@ app.post('/api/login', loginLimiter, async (req, res) => {
    ------------------------------------------------------------------ */
 const MAX_MESSAGES     = 40;
 const MAX_CONTENT_LEN  = 4000;
-const MAX_SYSTEM_LEN   = 1000;
+const MAX_SYSTEM_LEN   = 1500;
 
 app.post('/api/chat', authenticateToken, chatLimiter, async (req, res) => {
   const { messages, system } = req.body;
+  console.log(`[CHAT] POST /api/chat - messages: ${messages ? messages.length : 0}, system prompt length: ${system ? system.length : 0}`);
 
   if (!Array.isArray(messages)) {
+    console.warn('[CHAT] messages is not an array');
     return res.status(400).json({ error: 'Invalid request: messages must be an array.' });
   }
 
   if (messages.length > MAX_MESSAGES) {
+    console.warn(`[CHAT] messages count ${messages.length} exceeds max ${MAX_MESSAGES}`);
     return res.status(400).json({ error: `Too many messages. Maximum is ${MAX_MESSAGES}.` });
   }
 
@@ -198,27 +209,33 @@ app.post('/api/chat', authenticateToken, chatLimiter, async (req, res) => {
       typeof msg.content !== 'string' ||
       !['user', 'assistant', 'system'].includes(msg.role)
     ) {
+      console.warn('[CHAT] message has invalid role or structure:', JSON.stringify(msg));
       return res.status(400).json({ error: 'Invalid request: each message must have a valid role and content string.' });
     }
     if (msg.content.length > MAX_CONTENT_LEN) {
+      console.warn(`[CHAT] message content length ${msg.content.length} exceeds max ${MAX_CONTENT_LEN}`);
       return res.status(400).json({ error: `Message content too long. Maximum is ${MAX_CONTENT_LEN} characters.` });
     }
   }
 
   if (system !== undefined) {
     if (typeof system !== 'string') {
+      console.warn('[CHAT] system prompt is not a string');
       return res.status(400).json({ error: 'Invalid request: system must be a string.' });
     }
     if (system.length > MAX_SYSTEM_LEN) {
+      console.warn(`[CHAT] system prompt length ${system.length} exceeds max ${MAX_SYSTEM_LEN}`);
       return res.status(400).json({ error: `System prompt too long. Maximum is ${MAX_SYSTEM_LEN} characters.` });
     }
   }
 
   if (!groqClient) {
+    console.error('[CHAT] groqClient is not initialized');
     return res.status(500).json({ error: 'API key not configured on server.' });
   }
 
   try {
+    console.log('[CHAT] Calling Groq API...');
     const chatCompletion = await groqClient.chat.completions.create({
       model:      'llama-3.3-70b-versatile',
       max_tokens: 1000,
@@ -229,6 +246,7 @@ app.post('/api/chat', authenticateToken, chatLimiter, async (req, res) => {
       temperature: 0.7,
     });
 
+    console.log('[CHAT] Groq API response received successfully');
     res.json(chatCompletion);
   } catch (err) {
     console.error('Groq API error:', err);

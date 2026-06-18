@@ -151,6 +151,7 @@ describe('Express Server Integration & Authentication Tests', () => {
     test('should return rate limit headers on login requests', async () => {
       const response = await request(app)
         .post('/api/login')
+        .set('x-test-rate-limit', 'true')
         .send({
           email: 'gaurav@carbontrack.in',
           password: 'wrong-password'
@@ -213,12 +214,14 @@ describe('Express Server Integration & Authentication Tests', () => {
           .post('/api/chat')
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${testToken}`)
+          .set('x-test-rate-limit', 'true')
           .send({ messages: [] });
       }
       const response = await request(app)
         .post('/api/chat')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-test-rate-limit', 'true')
         .send({ messages: [] });
 
       expect(response.status).toBe(429);
@@ -268,12 +271,12 @@ describe('Express Server Integration & Authentication Tests', () => {
       expect(response.body.error).toContain('Message content too long');
     });
 
-    test('should return 400 when system prompt exceeds 1000 chars', async () => {
+    test('should return 400 when system prompt exceeds 1500 chars', async () => {
       const response = await request(app)
         .post('/api/chat')
         .set('Authorization', `Bearer ${testToken}`)
         .send({
-          system: 's'.repeat(1001),
+          system: 's'.repeat(1501),
           messages: [{ role: 'user', content: 'hello' }]
         });
       expect(response.status).toBe(400);

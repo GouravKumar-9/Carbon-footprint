@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CarbonTrack India — Know Your Footprint</title>
 <!-- Chart.js with Subresource Integrity (SRI) hash -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"
-  integrity="sha512-ZyhIervAjOSn6euqZr6QL1ybRTSzvqmNxMYHEpbKEVP8SC+uBpSXZ/Gt9xyqeNYbXjFjKV+5POs36x6IxRuQ=="
-  crossorigin="anonymous" defer></script>
+<script src="/js/chart.umd.js" defer></script>
 <script src="/js/emissions.js" defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -500,25 +498,64 @@
       <h2>Your AI green guide</h2>
       <p>Ask anything about reducing your carbon footprint. Powered by Groq Llama.</p>
     </div>
-    <div class="chat-window">
-      <div class="chat-messages" id="chat-messages">
-        <div class="msg msg-ai">
-          <div class="msg-ai-name">🌿 GreenGuide AI</div>
-          Namaste! I'm your personal carbon coach. I know your footprint is 3.6t/year — below India's average but above the 1.5°C target. Ask me anything — tips for your commute, food swaps, or a full reduction plan!
+    
+    <div class="chat-grid-container">
+      <!-- Chat Window Column -->
+      <div class="chat-window-col">
+        <div class="chat-window">
+          <div class="chat-messages" id="chat-messages">
+            <div class="msg msg-ai">
+              <div class="msg-ai-name">🌿 GreenGuide AI</div>
+              Namaste! I'm your personal carbon coach. I know your footprint is 3.6t/year — below India's average but above the 1.5°C target. Ask me anything — tips for your commute, food swaps, or a full reduction plan!
+            </div>
+          </div>
+          <div class="chat-suggestions" id="chat-suggs">
+            <button class="sugg-chip" onclick="sendAIMessage('What are the top 3 things I can do to reduce my footprint this week?')">Top 3 quick wins</button>
+            <button class="sugg-chip" onclick="sendAIMessage('How can I reduce emissions from my daily commute in India?')">Commute tips</button>
+            <button class="sugg-chip" onclick="sendAIMessage('What Indian foods have the lowest carbon footprint?')">Low-carbon Indian food</button>
+            <button class="sugg-chip" onclick="sendAIMessage('How much CO₂ does a flight from Delhi to Mumbai produce?')">Flight emissions</button>
+            <button class="sugg-chip" onclick="sendAIMessage('How can I save on electricity bill and reduce emissions?')">Cut electricity</button>
+          </div>
+          <div class="chat-input-bar">
+            <input type="text" class="chat-input" id="chat-input" placeholder="Ask me anything about carbon footprint..." onkeydown="if(event.key==='Enter')sendChat()">
+            <button class="chat-send" onclick="sendChat()">Send</button>
+          </div>
         </div>
       </div>
-      <div class="chat-suggestions" id="chat-suggs">
-        <button class="sugg-chip" onclick="sendAIMessage('What are the top 3 things I can do to reduce my footprint this week?')">Top 3 quick wins</button>
-        <button class="sugg-chip" onclick="sendAIMessage('How can I reduce emissions from my daily commute in India?')">Commute tips</button>
-        <button class="sugg-chip" onclick="sendAIMessage('What Indian foods have the lowest carbon footprint?')">Low-carbon Indian food</button>
-        <button class="sugg-chip" onclick="sendAIMessage('How much CO₂ does a flight from Delhi to Mumbai produce?')">Flight emissions</button>
-        <button class="sugg-chip" onclick="sendAIMessage('How can I save on electricity bill and reduce emissions?')">Cut electricity</button>
-      </div>
-      <div class="chat-input-bar">
-        <input type="text" class="chat-input" id="chat-input" placeholder="Ask me anything about carbon footprint..." onkeydown="if(event.key==='Enter')sendChat()">
-        <button class="chat-send" onclick="sendChat()">Send</button>
+
+      <!-- Live Footprint Column -->
+      <div class="chat-stats-col">
+        <div class="card chat-stats-card">
+          <div class="card-title" style="margin-bottom:12px;font-weight:700;color:var(--green-800)">Live Footprint Profile</div>
+          <div style="text-align:center;padding:12px 0;border-bottom:1px solid var(--border)">
+            <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Calculated Footprint</div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:700;color:var(--text)" id="chat-stats-total">3.6</div>
+            <div style="font-size:11px;color:var(--text-hint);margin-top:2px">tonnes CO₂ / year</div>
+          </div>
+          
+          <div style="margin-top:16px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+              <span>Target (1.5°C)</span>
+              <span style="font-weight:600">2.5 tonnes</span>
+            </div>
+            <div class="prog-bar" style="height:8px;margin-top:2px;background:var(--green-100)">
+              <div class="prog-fill" id="chat-stats-meter" style="width:78%;background:var(--amber-400)"></div>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:6px;text-align:center" id="chat-stats-label">
+              Above 1.5°C target. Room to improve!
+            </div>
+          </div>
+          
+          <div style="margin-top:20px">
+            <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Source Breakdown</div>
+            <div id="chat-stats-breakdown" style="display:grid;gap:8px"></div>
+          </div>
+          
+          <button class="btn-primary" style="width:100%;margin-top:20px;font-size:13px;padding:10px" onclick="showPage('calculator')">✏️ Edit in Calculator</button>
+        </div>
       </div>
     </div>
+
     <div class="ai-tips">
       <button class="ai-tip" onclick="sendAIMessage('Give me a 30-day green challenge plan')">
         <div class="ai-tip-icon" aria-hidden="true">📅</div>
@@ -721,6 +758,30 @@
     </div>
   </div>
 </footer>
+
+<!-- ===== MOBILE BOTTOM NAVIGATION ===== -->
+<div class="mobile-nav private-link" style="display:none">
+  <button class="mobile-nav-link active" data-page="dashboard" onclick="showPage('dashboard')" aria-label="Dashboard">
+    <span class="mobile-nav-icon">📊</span>
+    <span class="mobile-nav-label">Dashboard</span>
+  </button>
+  <button class="mobile-nav-link" data-page="calculator" onclick="showPage('calculator')" aria-label="Calculator">
+    <span class="mobile-nav-icon">🧮</span>
+    <span class="mobile-nav-label">Calculator</span>
+  </button>
+  <button class="mobile-nav-link" data-page="recommendations" onclick="showPage('recommendations')" aria-label="Recommendations">
+    <span class="mobile-nav-icon">💡</span>
+    <span class="mobile-nav-label">Plan</span>
+  </button>
+  <button class="mobile-nav-link" data-page="chat" onclick="showPage('chat')" aria-label="AI Guide">
+    <span class="mobile-nav-icon">🤖</span>
+    <span class="mobile-nav-label">AI Guide</span>
+  </button>
+  <button class="mobile-nav-link" data-page="profile" onclick="showPage('profile')" aria-label="Profile">
+    <span class="mobile-nav-icon">👤</span>
+    <span class="mobile-nav-label">Profile</span>
+  </button>
+</div>
 
 </body>
 </html>
