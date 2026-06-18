@@ -1,64 +1,265 @@
 require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
+const express    = require('express');
+const cors       = require('cors');
+const path       = require('path');
+const helmet     = require('helmet');
+const rateLimit  = require('express-rate-limit');
+const jwt        = require('jsonwebtoken');
+const { Groq }   = require('groq-sdk');
+const crypto     = require('crypto');
+const bcrypt     = require('bcryptjs');
+const compression = require('compression');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+app.disable('x-powered-by');
 
-// ✅ Allow browser requests from your own site
-app.use(cors());
-app.use(express.json());
+const PORT       = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET ||
+  (process.env.NODE_ENV === 'test'
+    ? 'carbontrack-secret-key-2026'
+    : crypto.randomBytes(32).toString('hex'));
 
-// ✅ Serve your carbontrack.html as the frontend
-app.use(express.static(path.join(__dirname, 'public')));
+/* ------------------------------------------------------------------ 
+   Groq client — singleton instantiated at startup (not per-request)
+   ------------------------------------------------------------------ */
+const GROQ_KEY = process.env.GROQ_API_KEY;
+const groqClient = GROQ_KEY ? new Groq({ apiKey: GROQ_KEY }) : null;
 
-// ✅ Proxy route — browser calls this, server calls Groq
-app.post('/api/chat', async (req, res) => {
+/* ------------------------------------------------------------------
+   Compression (gzip/brotli) — reduces transfer size ~70%
+   ------------------------------------------------------------------ */
+app.use(compression());
+
+/* ------------------------------------------------------------------
+   Helmet — strict security headers
+   ------------------------------------------------------------------ */
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc:  ["'self'"],
+      scriptSrc:   [
+        "'self'",
+        // Chart.js from cdnjs with SRI enforced by the browser
+        "https://cdnjs.cloudflare.com",
+      ],
+      styleSrc:    ["'self'", "https://fonts.googleapis.com"],
+      fontSrc:     ["'self'", "https://fonts.gstatic.com"],
+      imgSrc:      ["'self'", "data:", "https://*"],
+      connectSrc:  ["'self'"],
+    },
+  },
+  // HSTS — force HTTPS for 1 year
+  hsts: { maxAge: 31536000, includeSubDomains: true },
+}));
+
+/* ------------------------------------------------------------------
+   CORS — allowlist only
+   ------------------------------------------------------------------ */
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : ['http://localhost:3000', 'http://127.0.0.1:3000'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+/* ------------------------------------------------------------------
+   Body parser — capped at 50 KB to block oversized payloads
+   ------------------------------------------------------------------ */
+app.use(express.json({ limit: '50kb' }));
+
+/* ------------------------------------------------------------------
+   Static files — serve with caching
+   ------------------------------------------------------------------ */
+app.use(express.static(path.join(__dirname, 'public'), {
+  maxAge: '1d',
+  setHeaders: (res, filepath) => {
+    if (path.basename(filepath) === 'index.html') {
+      res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+    }
+  }
+}));
+
+/* ------------------------------------------------------------------
+   JWT Authentication Middleware
+   ------------------------------------------------------------------ */
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token      = authHeader && authHeader.split(' ')[1]; // Bearer <token>
+
+  if (!token) {
+    return res.status(401).json({ error: 'Access denied: Token missing.' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid or expired token.' });
+    }
+    req.user = user;
+    next();
+  });
+}
+
+/* ------------------------------------------------------------------
+   Rate limiters
+   ------------------------------------------------------------------ */
+const loginLimiter = rateLimit({
+  windowMs:      15 * 60 * 1000,
+  max:           process.env.NODE_ENV === 'test' ? 100 : 5,
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message: { error: 'Too many login attempts from this IP. Please try again after 15 minutes.' }
+});
+
+const chatLimiter = rateLimit({
+  windowMs:      15 * 60 * 1000,
+  max:           30,
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message: { error: 'Too many chat requests from this IP. Please try again after 15 minutes.' }
+});
+
+/* ------------------------------------------------------------------
+   Credentials — bcrypt (industry standard, automatic salt baked in)
+   
+   DEFAULT: bcrypt hash of 'greenplanet2026' (cost factor 12)
+   To generate your own: node -e "require('bcryptjs').hash('yourpassword',12).then(h=>console.log(h))"
+   Then set ADMIN_PASSWORD_HASH in your environment / Cloud Run secret.
+   ------------------------------------------------------------------ */
+const defaultEmail        = (process.env.ADMIN_EMAIL || 'gaurav@carbontrack.in').toLowerCase();
+const defaultPasswordHash = process.env.ADMIN_PASSWORD_HASH ||
+  '$2a$12$LIBAd1BKgx4mz0TQpkNhbuY2O1JxS7L/yKKJDJGVQQh4vlqc7kFjq'; // bcrypt of 'greenplanet2026'
+
+/* ------------------------------------------------------------------
+   POST /api/login
+   ------------------------------------------------------------------ */
+app.post('/api/login', loginLimiter, async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required.' });
+  }
+
+  // Length cap — prevent hash-DoS
+  if (typeof email !== 'string' || email.length > 254) {
+    return res.status(400).json({ error: 'Invalid email format.' });
+  }
+  if (typeof password !== 'string' || password.length > 128) {
+    return res.status(400).json({ error: 'Password too long.' });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: 'Invalid email format.' });
+  }
+
+  const isEmailMatch    = email.toLowerCase() === defaultEmail;
+  // bcrypt compare — constant-time; always run even if email wrong (timing safety)
+  const isPasswordMatch = await bcrypt.compare(password, defaultPasswordHash);
+
+  if (isEmailMatch && isPasswordMatch) {
+    const user  = { email: defaultEmail, name: 'Gaurav' };
+    const token = jwt.sign(user, JWT_SECRET, { expiresIn: '2h' });
+    return res.json({ token, user });
+  }
+
+  return res.status(401).json({ error: 'Invalid email or password.' });
+});
+
+/* ------------------------------------------------------------------
+   POST /api/chat — protected, rate-limited, input-validated
+   ------------------------------------------------------------------ */
+const MAX_MESSAGES     = 40;
+const MAX_CONTENT_LEN  = 4000;
+const MAX_SYSTEM_LEN   = 1000;
+
+app.post('/api/chat', authenticateToken, chatLimiter, async (req, res) => {
   const { messages, system } = req.body;
 
-  const GROQ_KEY = process.env.GROQ_API_KEY;
+  if (!Array.isArray(messages)) {
+    return res.status(400).json({ error: 'Invalid request: messages must be an array.' });
+  }
 
-  if (!GROQ_KEY) {
+  if (messages.length > MAX_MESSAGES) {
+    return res.status(400).json({ error: `Too many messages. Maximum is ${MAX_MESSAGES}.` });
+  }
+
+  for (const msg of messages) {
+    if (
+      typeof msg !== 'object' || msg === null ||
+      typeof msg.content !== 'string' ||
+      !['user', 'assistant', 'system'].includes(msg.role)
+    ) {
+      return res.status(400).json({ error: 'Invalid request: each message must have a valid role and content string.' });
+    }
+    if (msg.content.length > MAX_CONTENT_LEN) {
+      return res.status(400).json({ error: `Message content too long. Maximum is ${MAX_CONTENT_LEN} characters.` });
+    }
+  }
+
+  if (system !== undefined) {
+    if (typeof system !== 'string') {
+      return res.status(400).json({ error: 'Invalid request: system must be a string.' });
+    }
+    if (system.length > MAX_SYSTEM_LEN) {
+      return res.status(400).json({ error: `System prompt too long. Maximum is ${MAX_SYSTEM_LEN} characters.` });
+    }
+  }
+
+  if (!groqClient) {
     return res.status(500).json({ error: 'API key not configured on server.' });
   }
 
   try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROQ_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        max_tokens: 1000,
-        messages: [
-          ...(system ? [{ role: 'system', content: system }] : []),
-          ...(messages || [])
-        ],
-        temperature: 0.7,
-      }),
+    const chatCompletion = await groqClient.chat.completions.create({
+      model:      'llama-3.3-70b-versatile',
+      max_tokens: 1000,
+      messages: [
+        ...(system ? [{ role: 'system', content: system }] : []),
+        ...messages
+      ],
+      temperature: 0.7,
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      return res.status(response.status).json({ error: data });
-    }
-
-    res.json(data);
+    res.json(chatCompletion);
   } catch (err) {
     console.error('Groq API error:', err);
     res.status(500).json({ error: 'Failed to reach Groq API.' });
   }
 });
 
-// Fallback to index.html for SPA routing
+/* ------------------------------------------------------------------
+   GET /api/healthz — liveness probe for Cloud Run / Docker
+   ------------------------------------------------------------------ */
+app.get('/api/healthz', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+/* ------------------------------------------------------------------
+   SPA fallback — serve index.html for all unmatched routes
+   ------------------------------------------------------------------ */
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`✅ CarbonTrack server running on port ${PORT}`);
-});
+/* ------------------------------------------------------------------
+   Start server (only when run directly, not when imported by tests)
+   ------------------------------------------------------------------ */
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`✅ CarbonTrack server running on port ${PORT}`);
+    if (!GROQ_KEY) {
+      console.warn('⚠️  GROQ_API_KEY not set — AI chat will be disabled.');
+    }
+  });
+}
+
+module.exports = app;

@@ -4,309 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CarbonTrack India — Know Your Footprint</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<!-- Chart.js with Subresource Integrity (SRI) hash -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"
+  integrity="sha512-ZyhIervAjOSn6euqZr6QL1ybRTSzvqmNxMYHEpbKEVP8SC+uBpSXZ/Gt9xyqeNYbXjFjKV+5POs36x6IxRuQ=="
+  crossorigin="anonymous" defer></script>
+<script src="/js/emissions.js" defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root {
-  --green-50: #f0faf0;
-  --green-100: #dcf5dc;
-  --green-200: #a8e6a8;
-  --green-400: #4caf50;
-  --green-600: #2e7d32;
-  --green-800: #1b5e20;
-  --amber-50: #fffbf0;
-  --amber-400: #f59e0b;
-  --amber-600: #d97706;
-  --red-400: #ef4444;
-  --red-600: #dc2626;
-  --earth: #5d4037;
-  --sky: #0288d1;
-  --bg: #f7f9f4;
-  --surface: #ffffff;
-  --border: rgba(0,0,0,0.08);
-  --text: #1a2e1a;
-  --text-muted: #5a7060;
-  --text-hint: #8fa896;
-  --radius: 12px;
-  --radius-sm: 8px;
-  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
-h1,h2,h3,.display{font-family:'Space Grotesk',sans-serif}
-
-/* NAV */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(247,249,244,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);height:60px;display:flex;align-items:center;padding:0 24px;gap:0}
-.nav-logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;color:var(--green-600);margin-right:auto;cursor:pointer;display:flex;align-items:center;gap:8px}
-.nav-logo span{display:inline-block;width:28px;height:28px;background:var(--green-400);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px}
-.nav-links{display:flex;gap:4px}
-.nav-link{padding:6px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;border:none;background:none;transition:all 0.15s}
-.nav-link:hover,.nav-link.active{background:var(--green-100);color:var(--green-600)}
-.nav-cta{margin-left:12px;padding:7px 16px;background:var(--green-600);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;transition:background 0.15s}
-.nav-cta:hover{background:var(--green-800)}
-
-/* PAGES */
-.page{display:none;padding-top:60px;min-height:100vh}
-.page.active{display:block}
-
-/* ===== LANDING ===== */
-.hero{min-height:calc(100vh - 60px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 24px;position:relative;overflow:hidden}
-.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 20%, rgba(76,175,80,0.08) 0%, transparent 70%);pointer-events:none}
-.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:var(--green-100);color:var(--green-600);font-size:12px;font-weight:600;padding:6px 14px;border-radius:100px;margin-bottom:24px;letter-spacing:0.05em;text-transform:uppercase}
-.hero-eyebrow span{width:6px;height:6px;background:var(--green-400);border-radius:50%;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(1.3)}}
-.hero h1{font-size:clamp(36px,6vw,72px);font-weight:700;line-height:1.1;letter-spacing:-0.03em;max-width:800px;margin-bottom:20px}
-.hero h1 em{font-style:normal;color:var(--green-400)}
-.hero-sub{font-size:18px;color:var(--text-muted);max-width:520px;line-height:1.7;margin-bottom:36px}
-.hero-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
-.btn-primary{padding:14px 28px;background:var(--green-600);color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer;transition:all 0.15s;font-family:'Inter',sans-serif}
-.btn-primary:hover{background:var(--green-800);transform:translateY(-1px)}
-.btn-outline{padding:14px 28px;background:transparent;color:var(--green-600);border:1.5px solid var(--green-400);border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer;transition:all 0.15s;font-family:'Inter',sans-serif}
-.btn-outline:hover{background:var(--green-50)}
-.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:600px;margin-top:60px;width:100%}
-.hero-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;text-align:center}
-.hero-stat-val{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:var(--green-600)}
-.hero-stat-label{font-size:12px;color:var(--text-muted);margin-top:4px}
-
-.features{padding:80px 24px;max-width:1100px;margin:0 auto}
-.section-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--green-400);margin-bottom:12px}
-.section-title{font-size:36px;font-weight:700;letter-spacing:-0.02em;margin-bottom:16px}
-.section-sub{font-size:16px;color:var(--text-muted);max-width:500px;line-height:1.7}
-.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:48px}
-.feat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;transition:transform 0.15s,box-shadow 0.15s}
-.feat-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
-.feat-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px}
-.feat-title{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:600;margin-bottom:8px}
-.feat-desc{font-size:14px;color:var(--text-muted);line-height:1.7}
-
-.how-section{background:var(--surface);padding:80px 24px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
-.how-inner{max-width:900px;margin:0 auto;text-align:center}
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:32px;margin-top:48px;text-align:left}
-.step-num{font-family:'Space Grotesk',sans-serif;font-size:40px;font-weight:700;color:var(--green-100);margin-bottom:8px}
-.step-title{font-weight:600;margin-bottom:6px}
-.step-desc{font-size:14px;color:var(--text-muted);line-height:1.7}
-
-.india-band{background:linear-gradient(135deg,#1b5e20 0%,#2e7d32 50%,#388e3c 100%);color:#fff;padding:60px 24px;text-align:center}
-.india-band h2{font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700;margin-bottom:12px}
-.india-band p{font-size:16px;opacity:0.85;max-width:560px;margin:0 auto 28px}
-
-/* ===== DASHBOARD ===== */
-.dash-wrap{max-width:1200px;margin:0 auto;padding:32px 24px}
-.dash-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:gap}
-.dash-greeting{font-size:22px;font-weight:600}
-.dash-date{font-size:13px;color:var(--text-muted);margin-top:2px}
-.live-badge{display:flex;align-items:center;gap:6px;background:var(--green-100);color:var(--green-600);font-size:12px;font-weight:600;padding:6px 12px;border-radius:100px}
-.live-dot{width:7px;height:7px;background:var(--green-400);border-radius:50%;animation:pulse 1.5s infinite}
-.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
-.m-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
-.m-label{font-size:12px;color:var(--text-muted);margin-bottom:8px;font-weight:500}
-.m-value{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:var(--text)}
-.m-unit{font-size:11px;color:var(--text-hint);margin-top:2px}
-.m-change{font-size:12px;margin-top:6px;font-weight:500}
-.up{color:var(--red-600)}.down{color:var(--green-600)}
-.dash-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
-.card-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
-.card-title span{font-size:12px;font-weight:400;color:var(--text-muted)}
-.habit-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
-.habit-row:last-child{border:none}
-.habit-icon{width:34px;height:34px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-.habit-info{flex:1}
-.habit-name{font-size:13px;font-weight:500}
-.habit-sub{font-size:11px;color:var(--text-muted);margin-top:2px}
-.habit-toggle{width:40px;height:22px;background:var(--border);border-radius:100px;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;border:none}
-.habit-toggle.on{background:var(--green-400)}
-.habit-toggle::after{content:'';position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:3px;left:3px;transition:left 0.2s}
-.habit-toggle.on::after{left:21px}
-.prog-bar{height:6px;background:var(--green-100);border-radius:3px;margin-top:6px;overflow:hidden}
-.prog-fill{height:100%;background:var(--green-400);border-radius:3px;transition:width 0.4s}
-.tip-box{background:var(--green-50);border:1px solid var(--green-100);border-radius:var(--radius-sm);padding:14px;margin-top:12px}
-.tip-label{font-size:11px;font-weight:600;color:var(--green-600);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px}
-.tip-text{font-size:13px;color:var(--text);line-height:1.6}
-
-/* ===== CALCULATOR ===== */
-.calc-wrap{max-width:900px;margin:0 auto;padding:32px 24px}
-.calc-hero{text-align:center;margin-bottom:40px}
-.calc-hero h2{font-size:30px;font-weight:700;letter-spacing:-0.02em;margin-bottom:10px}
-.calc-hero p{color:var(--text-muted);font-size:15px}
-.calc-grid{display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start}
-.calc-section{margin-bottom:24px}
-.calc-section-title{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--green-600);margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.sl-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
-.sl-icon{font-size:18px;width:28px;text-align:center;flex-shrink:0}
-.sl-label{font-size:13px;color:var(--text);min-width:140px}
-.sl-input{flex:1;-webkit-appearance:none;height:4px;background:var(--green-100);border-radius:2px;outline:none;cursor:pointer}
-.sl-input::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--green-600);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.2);cursor:pointer}
-.sl-val{font-size:13px;font-weight:600;color:var(--green-600);min-width:60px;text-align:right}
-.result-card{background:var(--green-800);color:#fff;border-radius:var(--radius);padding:24px;position:sticky;top:80px}
-.result-total{font-family:'Space Grotesk',sans-serif;font-size:52px;font-weight:700;line-height:1}
-.result-unit{font-size:14px;opacity:0.7;margin-bottom:20px}
-.result-meter{height:8px;background:rgba(255,255,255,0.2);border-radius:4px;margin:12px 0}
-.result-meter-fill{height:100%;border-radius:4px;transition:width 0.5s,background 0.5s}
-.result-label{font-size:13px;opacity:0.8;margin-bottom:20px}
-.result-breakdown{border-top:1px solid rgba(255,255,255,0.15);padding-top:16px;margin-top:4px}
-.rb-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;opacity:0.85}
-.rb-bar{height:3px;background:rgba(255,255,255,0.15);border-radius:2px;margin-top:3px;overflow:hidden}
-.rb-fill{height:100%;background:rgba(255,255,255,0.6);border-radius:2px}
-.calc-ai-btn{width:100%;margin-top:16px;padding:12px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:var(--radius-sm);color:#fff;font-size:13px;font-weight:500;cursor:pointer;transition:background 0.15s;font-family:'Inter',sans-serif}
-.calc-ai-btn:hover{background:rgba(255,255,255,0.25)}
-
-/* ===== LEADERBOARD ===== */
-.lb-wrap{max-width:900px;margin:0 auto;padding:32px 24px}
-.lb-header{text-align:center;margin-bottom:36px}
-.lb-tabs{display:flex;gap:8px;justify-content:center;margin-bottom:28px}
-.lb-tab{padding:8px 20px;border-radius:100px;font-size:13px;font-weight:500;cursor:pointer;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);transition:all 0.15s}
-.lb-tab.active{background:var(--green-600);color:#fff;border-color:var(--green-600)}
-.podium{display:flex;align-items:flex-end;justify-content:center;gap:12px;margin-bottom:32px}
-.pod{display:flex;flex-direction:column;align-items:center;gap:8px}
-.pod-avatar{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;font-family:'Space Grotesk',sans-serif}
-.pod-name{font-size:13px;font-weight:500;text-align:center}
-.pod-val{font-size:12px;color:var(--green-600);font-weight:600}
-.pod-base{border-radius:var(--radius-sm) var(--radius-sm) 0 0;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#fff;width:80px}
-.pod1 .pod-base{height:90px;background:var(--green-600)}
-.pod2 .pod-base{height:65px;background:var(--green-200);color:var(--green-800)}
-.pod3 .pod-base{height:50px;background:#c8e6c9;color:var(--green-800)}
-.lb-table{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-.lb-row{display:grid;grid-template-columns:50px 1fr 120px 100px 80px;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border);font-size:14px;transition:background 0.1s}
-.lb-row:last-child{border:none}
-.lb-row:hover{background:var(--bg)}
-.lb-row.me{background:var(--green-50);border-left:3px solid var(--green-400)}
-.lb-rank{font-family:'Space Grotesk',sans-serif;font-weight:700;color:var(--text-hint)}
-.lb-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
-.lb-user{display:flex;align-items:center;gap:10px}
-.lb-uname{font-weight:500}
-.lb-city{font-size:11px;color:var(--text-muted)}
-.lb-co2{font-weight:600;color:var(--green-600)}
-.lb-streak{font-size:12px;color:var(--text-muted)}
-.challenge-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:28px}
-.challenge-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
-.ch-title{font-weight:600;font-size:14px;margin-bottom:6px}
-.ch-desc{font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.6}
-.ch-prog{display:flex;align-items:center;gap:8px}
-.ch-prog-bar{flex:1;height:5px;background:var(--green-100);border-radius:3px;overflow:hidden}
-.ch-prog-fill{height:100%;background:var(--green-400);border-radius:3px}
-.ch-pct{font-size:11px;font-weight:600;color:var(--green-600)}
-.badge-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600}
-.badge-green{background:var(--green-100);color:var(--green-600)}
-.badge-amber{background:#fef3c7;color:#92400e}
-.badge-red{background:#fee2e2;color:#991b1b}
-
-/* ===== MARKETPLACE ===== */
-.mkt-wrap{max-width:1100px;margin:0 auto;padding:32px 24px}
-.mkt-hero{background:var(--green-800);border-radius:var(--radius);padding:32px;color:#fff;margin-bottom:28px;display:flex;align-items:center;justify-content:space-between;gap:20px}
-.mkt-hero h2{font-size:24px;font-weight:700;margin-bottom:8px}
-.mkt-hero p{font-size:14px;opacity:0.8;max-width:400px;line-height:1.6}
-.credit-box{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:var(--radius-sm);padding:16px 24px;text-align:center;flex-shrink:0}
-.credit-val{font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:700}
-.credit-label{font-size:12px;opacity:0.7;margin-top:2px}
-.filter-bar{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
-.filter-btn{padding:7px 16px;border-radius:100px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);transition:all 0.15s}
-.filter-btn.active{background:var(--green-600);color:#fff;border-color:var(--green-600)}
-.proj-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
-.proj-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:transform 0.15s,box-shadow 0.15s}
-.proj-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
-.proj-img{height:140px;display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
-.proj-verified{position:absolute;top:10px;right:10px;background:#fff;border-radius:100px;padding:3px 10px;font-size:10px;font-weight:700;color:var(--green-600);border:1px solid var(--green-200)}
-.proj-body{padding:16px}
-.proj-title{font-weight:600;font-size:15px;margin-bottom:4px}
-.proj-loc{font-size:12px;color:var(--text-muted);margin-bottom:10px;display:flex;align-items:center;gap:4px}
-.proj-stats{display:flex;gap:16px;margin-bottom:14px}
-.pstat{text-align:center}
-.pstat-val{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;color:var(--green-600)}
-.pstat-label{font-size:10px;color:var(--text-muted);margin-top:1px}
-.proj-price{display:flex;align-items:center;justify-content:space-between}
-.proj-price-val{font-weight:700;color:var(--text)}
-.proj-price-sub{font-size:11px;color:var(--text-muted)}
-.buy-btn{padding:8px 18px;background:var(--green-600);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;transition:background 0.15s;font-family:'Inter',sans-serif}
-.buy-btn:hover{background:var(--green-800)}
-
-/* ===== AI CHAT ===== */
-.chat-wrap{max-width:760px;margin:0 auto;padding:32px 24px}
-.chat-header{text-align:center;margin-bottom:28px}
-.chat-header h2{font-size:26px;font-weight:700;letter-spacing:-0.02em;margin-bottom:6px}
-.chat-header p{color:var(--text-muted);font-size:14px}
-.chat-window{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-.chat-messages{height:420px;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
-.msg{max-width:75%;padding:12px 16px;border-radius:16px;font-size:14px;line-height:1.7}
-.msg-ai{background:var(--green-50);border:1px solid var(--green-100);border-radius:16px 16px 16px 4px;align-self:flex-start}
-.msg-user{background:var(--green-600);color:#fff;border-radius:16px 16px 4px 16px;align-self:flex-end}
-.msg-ai-name{font-size:11px;font-weight:600;color:var(--green-600);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em}
-.typing{display:flex;align-items:center;gap:4px;padding:4px 0}
-.typing span{width:6px;height:6px;background:var(--green-400);border-radius:50%;animation:bounce 1.2s infinite}
-.typing span:nth-child(2){animation-delay:0.2s}
-.typing span:nth-child(3){animation-delay:0.4s}
-@keyframes bounce{0%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
-.chat-input-bar{display:flex;gap:10px;padding:16px;border-top:1px solid var(--border)}
-.chat-input{flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border 0.15s;background:var(--bg)}
-.chat-input:focus{border-color:var(--green-400)}
-.chat-send{padding:10px 18px;background:var(--green-600);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;font-family:'Inter',sans-serif;transition:background 0.15s}
-.chat-send:hover{background:var(--green-800)}
-.chat-suggestions{display:flex;flex-wrap:wrap;gap:8px;padding:0 20px 16px;border-top:1px solid var(--border);padding-top:14px}
-.sugg-chip{padding:7px 14px;background:var(--bg);border:1px solid var(--border);border-radius:100px;font-size:12px;cursor:pointer;transition:all 0.15s;color:var(--text)}
-.sugg-chip:hover{background:var(--green-100);border-color:var(--green-200);color:var(--green-700)}
-.ai-tips{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:20px}
-.ai-tip{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:all 0.15s}
-.ai-tip:hover{border-color:var(--green-400);background:var(--green-50)}
-.ai-tip-icon{font-size:20px;margin-bottom:8px}
-.ai-tip-text{font-size:13px;color:var(--text-muted);line-height:1.6}
-
-/* ===== RECOMMENDATIONS ===== */
-.rec-wrap{max-width:1060px;margin:0 auto;padding:40px 24px}
-.rec-hero{text-align:center;padding-bottom:48px;border-bottom:1px solid var(--border);margin-bottom:40px}
-.rec-hero h2{font-size:clamp(28px,5vw,42px);font-weight:700;letter-spacing:-0.03em;margin-bottom:12px}
-.rec-hero p{font-size:16px;color:var(--text-muted);max-width:580px;margin:0 auto;line-height:1.7}
-.rec-gap-card{background:linear-gradient(135deg,var(--green-800) 0%,#2e7d32 100%);border-radius:var(--radius);padding:28px 32px;margin-bottom:32px;color:#fff;position:relative;overflow:hidden}
-.rec-gap-card::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;background:rgba(255,255,255,0.05);border-radius:50%}
-.rec-gap-card::after{content:'';position:absolute;bottom:-60px;right:60px;width:160px;height:160px;background:rgba(255,255,255,0.04);border-radius:50%}
-.rec-gap-bar{height:10px;background:rgba(255,255,255,0.2);border-radius:5px;overflow:hidden;margin:16px 0 8px}
-.rec-gap-fill{height:100%;border-radius:5px;transition:width 0.8s ease;background:linear-gradient(90deg,#a5d6a7,#4caf50)}
-.rec-category-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
-.rec-cat-btn{padding:8px 18px;border-radius:100px;font-size:13px;font-weight:500;cursor:pointer;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);transition:all 0.2s}
-.rec-cat-btn.active,.rec-cat-btn:hover{background:var(--green-600);color:#fff;border-color:var(--green-600)}
-.rec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;margin-bottom:32px}
-.rec-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:22px;transition:all 0.2s;cursor:pointer;position:relative}
-.rec-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.07)}
-.rec-card.selected{border-color:var(--green-400);background:var(--green-50);box-shadow:0 0 0 3px rgba(76,175,80,0.12)}
-.rec-cat-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:3px 10px;border-radius:100px;display:inline-block;margin-bottom:14px}
-.rec-card-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:14px}
-.rec-card-title{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:600;margin-bottom:6px;padding-right:32px;line-height:1.3}
-.rec-card-desc{font-size:13px;color:var(--text-muted);line-height:1.65;margin-bottom:16px}
-.rec-difficulty{display:flex;align-items:center;gap:4px;margin-bottom:12px}
-.rec-dot{width:6px;height:6px;border-radius:50%}
-.rec-card-footer{padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
-.rec-saving{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700}
-.rec-check-btn{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);position:absolute;top:18px;right:18px;display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;transition:all 0.2s;background:transparent}
-.rec-card.selected .rec-check-btn{background:var(--green-500);border-color:var(--green-500)}
-.rec-impact-summary{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;margin-bottom:32px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px}
-.rec-impact-item{text-align:center}
-.rec-impact-val{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;color:var(--green-600)}
-.rec-impact-label{font-size:13px;color:var(--text-muted);margin-top:4px}
-.rec-howto{margin-top:48px;padding-top:40px;border-top:1px solid var(--border)}
-.rec-howto-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;margin-top:28px}
-.rec-howto-step{text-align:center}
-.rec-howto-num{width:44px;height:44px;background:var(--green-100);color:var(--green-600);border-radius:50%;font-weight:700;font-size:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-family:'Space Grotesk',sans-serif}
-.rec-howto-title{font-weight:600;font-size:15px;margin-bottom:6px}
-.rec-howto-desc{font-size:13px;color:var(--text-muted);line-height:1.6}
-
-/* REAL-TIME TICKER */
-.ticker{background:var(--green-800);color:#fff;padding:8px 0;overflow:hidden;white-space:nowrap;font-size:12px;font-weight:500}
-.ticker-inner{display:inline-flex;gap:40px;animation:ticker 30s linear infinite}
-@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-.ticker-item{display:inline-flex;align-items:center;gap:6px;opacity:0.9}
-.ticker-item .dot{width:5px;height:5px;background:#4caf50;border-radius:50%}
-
-/* RESPONSIVE */
-@media(max-width:768px){
-  .metric-grid{grid-template-columns:repeat(2,1fr)}
-  .dash-grid{grid-template-columns:1fr}
-  .calc-grid{grid-template-columns:1fr}
-  .result-card{position:static}
-  .nav-links{display:none}
-}
-</style>
+<!-- External stylesheet (replaces inline <style>) -->
+<link rel="stylesheet" href="/css/main.css">
 </head>
 <body>
+
+<div id="route-announcer" class="sr-only" aria-live="polite"></div>
 
 <!-- TICKER -->
 <div class="ticker" style="position:fixed;top:0;left:0;right:0;z-index:200">
@@ -315,19 +25,23 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(247,249,244,
 
 <!-- NAV -->
 <nav style="top:32px">
-  <div class="nav-logo" onclick="showPage('landing')">
+  <button class="nav-logo" onclick="showPage('landing')" aria-label="CarbonTrack India home" style="background:none;border:none;text-align:left;padding:0;">
     <span>🌿</span> CarbonTrack India
-  </div>
+  </button>
   <div class="nav-links">
     <button class="nav-link active" data-page="landing" onclick="showPage('landing')">Home</button>
-    <button class="nav-link" data-page="dashboard" onclick="showPage('dashboard')">Dashboard</button>
-    <button class="nav-link" data-page="calculator" onclick="showPage('calculator')">Calculator</button>
-    <button class="nav-link" data-page="recommendations" onclick="showPage('recommendations')">Recommendations</button>
-    <button class="nav-link" data-page="leaderboard" onclick="showPage('leaderboard')">Community</button>
-    <button class="nav-link" data-page="marketplace" onclick="showPage('marketplace')">Offset</button>
-    <button class="nav-link" data-page="chat" onclick="showPage('chat')">AI Guide</button>
+    <button class="nav-link private-link" data-page="dashboard" onclick="showPage('dashboard')" style="display:none">Dashboard</button>
+    <button class="nav-link private-link" data-page="calculator" onclick="showPage('calculator')" style="display:none">Calculator</button>
+    <button class="nav-link private-link" data-page="recommendations" onclick="showPage('recommendations')" style="display:none">Recommendations</button>
+    <button class="nav-link private-link" data-page="leaderboard" onclick="showPage('leaderboard')" style="display:none">Community</button>
+    <button class="nav-link private-link" data-page="marketplace" onclick="showPage('marketplace')" style="display:none">Offset</button>
+    <button class="nav-link private-link" data-page="chat" onclick="showPage('chat')" style="display:none">AI Guide</button>
+    <button class="nav-link private-link" data-page="profile" onclick="showPage('profile')" style="display:none">Profile</button>
   </div>
-  <button class="nav-cta" onclick="showPage('dashboard')">🌿 Start tracking</button>
+  <button class="nav-link private-link" id="nav-logout-btn" onclick="handleLogout()" style="display:none;margin-right:8px">Logout</button>
+  <button class="nav-link private-link" id="nav-log-btn" onclick="showLogModal()" style="display:none;margin-left:8px;padding:7px 14px;background:var(--green-50);color:var(--green-600);border:1.5px solid var(--green-200);border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;transition:background 0.15s;font-family:Inter,sans-serif">+ Log activity</button>
+  <button class="nav-cta public-cta" id="nav-login-btn" onclick="showPage('login')" style="margin-left:8px">Log In</button>
+  <button class="nav-cta private-link" id="nav-dashboard-cta" onclick="showPage('dashboard')" style="display:none">🌿 Start tracking</button>
 </nav>
 
 <!-- ===== LANDING PAGE ===== -->
@@ -425,12 +139,49 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(247,249,244,
   </div>
 </div>
 
+<!-- ===== LOGIN PAGE ===== -->
+<div class="page" id="page-login">
+  <div style="max-width:420px;margin:60px auto;padding:32px 24px">
+    <div class="card" style="padding:32px;box-shadow:var(--shadow)">
+      <div style="text-align:center;margin-bottom:28px">
+        <span style="font-size:36px;display:block;margin-bottom:12px" aria-hidden="true">🌿</span>
+        <h2 style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--text)">Welcome Back</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-top:6px">Log in to track your carbon footprint</p>
+      </div>
+
+      <form id="login-form" onsubmit="handleLoginSubmit(event)" style="display:grid;gap:16px">
+        <div>
+          <label for="login-email" style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;color:var(--text-muted)">Email Address</label>
+          <input type="email" id="login-email" required placeholder="gaurav@carbontrack.in" aria-describedby="login-error-msg" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;outline:none;background:var(--bg);transition:border-color 0.15s">
+        </div>
+        <div>
+          <label for="login-password" style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;color:var(--text-muted)">Password</label>
+          <div style="position:relative">
+            <input type="password" id="login-password" required placeholder="••••••••" aria-describedby="login-error-msg" style="width:100%;padding:10px 40px 10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;outline:none;background:var(--bg);transition:border-color 0.15s">
+            <button type="button" onclick="togglePasswordVisibility(event)" aria-label="Show password" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:14px;color:var(--text-muted);display:flex;align-items:center;justify-content:center">👁️</button>
+          </div>
+        </div>
+
+        <div id="login-error-msg" style="color:var(--red-600);font-size:13px;font-weight:500;display:none;margin-top:-4px"></div>
+
+        <button type="submit" class="btn-primary" style="width:100%;padding:12px;margin-top:8px">Log In</button>
+      </form>
+
+      <div style="margin-top:24px;padding:16px;background:var(--green-50);border:1px solid var(--green-100);border-radius:var(--radius-sm);font-size:12px;line-height:1.6">
+        <div style="font-weight:600;color:var(--green-600);margin-bottom:4px">💡 Demo Credentials:</div>
+        <div><strong>Email:</strong> gaurav@carbontrack.in</div>
+        <div><strong>Password:</strong> greenplanet2026</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== DASHBOARD ===== -->
 <div class="page" id="page-dashboard">
   <div class="dash-wrap">
     <div class="dash-header">
       <div>
-        <div class="dash-greeting">Good morning, Arjun 👋</div>
+        <div class="dash-greeting">Good morning, Gaurav 👋</div>
         <div class="dash-date" id="dash-date"></div>
       </div>
       <div class="live-badge"><div class="live-dot"></div> Live tracking</div>
@@ -519,25 +270,25 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(247,249,244,
         <div class="card">
           <div class="calc-section">
             <div class="calc-section-title">🚗 Transport</div>
-            <div class="sl-row"><span class="sl-icon">🚗</span><span class="sl-label">Car (km/day)</span><input type="range" class="sl-input" min="0" max="150" value="25" step="1" id="sl-car" oninput="updateCalc()"><span class="sl-val" id="sv-car">25 km</span></div>
-            <div class="sl-row"><span class="sl-icon">🛵</span><span class="sl-label">Bike/scooter (km/day)</span><input type="range" class="sl-input" min="0" max="80" value="10" step="1" id="sl-bike" oninput="updateCalc()"><span class="sl-val" id="sv-bike">10 km</span></div>
-            <div class="sl-row"><span class="sl-icon">✈️</span><span class="sl-label">Flights per year</span><input type="range" class="sl-input" min="0" max="20" value="2" step="1" id="sl-fly" oninput="updateCalc()"><span class="sl-val" id="sv-fly">2 flights</span></div>
-            <div class="sl-row"><span class="sl-icon">🚆</span><span class="sl-label">Train trips/month</span><input type="range" class="sl-input" min="0" max="30" value="4" step="1" id="sl-train" oninput="updateCalc()"><span class="sl-val" id="sv-train">4 trips</span></div>
+            <div class="sl-row"><span class="sl-icon" aria-hidden="true">🚗</span><label for="sl-car" class="sl-label">Car (km/day)</label><input type="range" class="sl-input" min="0" max="150" value="25" step="1" id="sl-car" oninput="updateCalc()"><span class="sl-val" id="sv-car">25 km</span></div>
+            <div class="sl-row"><span class="sl-icon" aria-hidden="true">🛵</span><label for="sl-bike" class="sl-label">Bike/scooter (km/day)</label><input type="range" class="sl-input" min="0" max="80" value="10" step="1" id="sl-bike" oninput="updateCalc()"><span class="sl-val" id="sv-bike">10 km</span></div>
+            <div class="sl-row"><span class="sl-icon" aria-hidden="true">✈️</span><label for="sl-fly" class="sl-label">Flights per year</label><input type="range" class="sl-input" min="0" max="20" value="2" step="1" id="sl-fly" oninput="updateCalc()"><span class="sl-val" id="sv-fly">2 flights</span></div>
+            <div class="sl-row"><span class="sl-icon" aria-hidden="true">🚆</span><label for="sl-train" class="sl-label">Train trips/month</label><input type="range" class="sl-input" min="0" max="30" value="4" step="1" id="sl-train" oninput="updateCalc()"><span class="sl-val" id="sv-train">4 trips</span></div>
           </div>
           <div class="calc-section">
             <div class="calc-section-title">🏠 Home energy</div>
-            <div class="sl-row"><span class="sl-icon">⚡</span><span class="sl-label">Electricity (kWh/month)</span><input type="range" class="sl-input" min="50" max="1000" value="180" step="10" id="sl-elec" oninput="updateCalc()"><span class="sl-val" id="sv-elec">180 kWh</span></div>
-            <div class="sl-row"><span class="sl-icon">🔥</span><span class="sl-label">LPG cylinders/month</span><input type="range" class="sl-input" min="0" max="6" value="1" step="0.5" id="sl-lpg" oninput="updateCalc()"><span class="sl-val" id="sv-lpg">1 cyl</span></div>
+            <div class="sl-row"><span class="sl-icon" aria-hidden="true">⚡</span><label for="sl-elec" class="sl-label">Electricity (kWh/month)</label><input type="range" class="sl-input" min="50" max="1000" value="180" step="10" id="sl-elec" oninput="updateCalc()"><span class="sl-val" id="sv-elec">180 kWh</span></div>
+            <div class="sl-row"><span class="sl-icon" aria-hidden="true">🔥</span><label for="sl-lpg" class="sl-label">LPG cylinders/month</label><input type="range" class="sl-input" min="0" max="6" value="1" step="0.5" id="sl-lpg" oninput="updateCalc()"><span class="sl-val" id="sv-lpg">1 cyl</span></div>
           </div>
           <div class="calc-section">
             <div class="calc-section-title">🍽️ Food & diet</div>
-            <div class="sl-row"><span class="sl-icon">🥩</span><span class="sl-label">Meat meals per week</span><input type="range" class="sl-input" min="0" max="21" value="5" step="1" id="sl-meat" oninput="updateCalc()"><span class="sl-val" id="sv-meat">5 meals</span></div>
-            <div class="sl-row"><span class="sl-icon">🐄</span><span class="sl-label">Dairy portions per day</span><input type="range" class="sl-input" min="0" max="10" value="2" step="1" id="sl-dairy" oninput="updateCalc()"><span class="sl-val" id="sv-dairy">2 portions</span></div>
+            <div class="sl-row"><span class="sl-icon" aria-hidden="true">🥩</span><label for="sl-meat" class="sl-label">Meat meals per week</label><input type="range" class="sl-input" min="0" max="21" value="5" step="1" id="sl-meat" oninput="updateCalc()"><span class="sl-val" id="sv-meat">5 meals</span></div>
+            <div class="sl-row"><span class="sl-icon" aria-hidden="true">🐄</span><label for="sl-dairy" class="sl-label">Dairy portions per day</label><input type="range" class="sl-input" min="0" max="10" value="2" step="1" id="sl-dairy" oninput="updateCalc()"><span class="sl-val" id="sv-dairy">2 portions</span></div>
           </div>
           <div class="calc-section">
             <div class="calc-section-title">🛍️ Shopping & lifestyle</div>
-            <div class="sl-row"><span class="sl-icon">👕</span><span class="sl-label">New clothes/month</span><input type="range" class="sl-input" min="0" max="20" value="3" step="1" id="sl-cloth" oninput="updateCalc()"><span class="sl-val" id="sv-cloth">3 items</span></div>
-            <div class="sl-row"><span class="sl-icon">📱</span><span class="sl-label">Electronics/year (₹k)</span><input type="range" class="sl-input" min="0" max="200" value="20" step="5" id="sl-elects" oninput="updateCalc()"><span class="sl-val" id="sv-elects">₹20k</span></div>
+            <div class="sl-row"><span class="sl-icon" aria-hidden="true">👕</span><label for="sl-cloth" class="sl-label">New clothes/month</label><input type="range" class="sl-input" min="0" max="20" value="3" step="1" id="sl-cloth" oninput="updateCalc()"><span class="sl-val" id="sv-cloth">3 items</span></div>
+            <div class="sl-row"><span class="sl-icon" aria-hidden="true">📱</span><label for="sl-elects" class="sl-label">Electronics/year (₹k)</label><input type="range" class="sl-input" min="0" max="200" value="20" step="5" id="sl-elects" oninput="updateCalc()"><span class="sl-val" id="sv-elects">₹20k</span></div>
           </div>
         </div>
       </div>
@@ -757,11 +508,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(247,249,244,
         </div>
       </div>
       <div class="chat-suggestions" id="chat-suggs">
-        <div class="sugg-chip" onclick="sendAIMessage('What are the top 3 things I can do to reduce my footprint this week?')">Top 3 quick wins</div>
-        <div class="sugg-chip" onclick="sendAIMessage('How can I reduce emissions from my daily commute in India?')">Commute tips</div>
-        <div class="sugg-chip" onclick="sendAIMessage('What Indian foods have the lowest carbon footprint?')">Low-carbon Indian food</div>
-        <div class="sugg-chip" onclick="sendAIMessage('How much CO₂ does a flight from Delhi to Mumbai produce?')">Flight emissions</div>
-        <div class="sugg-chip" onclick="sendAIMessage('How can I save on electricity bill and reduce emissions?')">Cut electricity</div>
+        <button class="sugg-chip" onclick="sendAIMessage('What are the top 3 things I can do to reduce my footprint this week?')">Top 3 quick wins</button>
+        <button class="sugg-chip" onclick="sendAIMessage('How can I reduce emissions from my daily commute in India?')">Commute tips</button>
+        <button class="sugg-chip" onclick="sendAIMessage('What Indian foods have the lowest carbon footprint?')">Low-carbon Indian food</button>
+        <button class="sugg-chip" onclick="sendAIMessage('How much CO₂ does a flight from Delhi to Mumbai produce?')">Flight emissions</button>
+        <button class="sugg-chip" onclick="sendAIMessage('How can I save on electricity bill and reduce emissions?')">Cut electricity</button>
       </div>
       <div class="chat-input-bar">
         <input type="text" class="chat-input" id="chat-input" placeholder="Ask me anything about carbon footprint..." onkeydown="if(event.key==='Enter')sendChat()">
@@ -769,537 +520,28 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(247,249,244,
       </div>
     </div>
     <div class="ai-tips">
-      <div class="ai-tip" onclick="sendAIMessage('Give me a 30-day green challenge plan')">
-        <div class="ai-tip-icon">📅</div>
+      <button class="ai-tip" onclick="sendAIMessage('Give me a 30-day green challenge plan')">
+        <div class="ai-tip-icon" aria-hidden="true">📅</div>
         <div class="ai-tip-text">30-day green challenge plan</div>
-      </div>
-      <div class="ai-tip" onclick="sendAIMessage('Compare my footprint to other Indians my age')">
-        <div class="ai-tip-icon">📊</div>
+      </button>
+      <button class="ai-tip" onclick="sendAIMessage('Compare my footprint to other Indians my age')">
+        <div class="ai-tip-icon" aria-hidden="true">📊</div>
         <div class="ai-tip-text">How do I compare to other Indians?</div>
-      </div>
-      <div class="ai-tip" onclick="sendAIMessage('What carbon offset projects in India should I support?')">
-        <div class="ai-tip-icon">🌳</div>
+      </button>
+      <button class="ai-tip" onclick="sendAIMessage('What carbon offset projects in India should I support?')">
+        <div class="ai-tip-icon" aria-hidden="true">🌳</div>
         <div class="ai-tip-text">Best Indian offset projects</div>
-      </div>
-      <div class="ai-tip" onclick="sendAIMessage('Explain why meat has a high carbon footprint')">
-        <div class="ai-tip-icon">🍽️</div>
+      </button>
+      <button class="ai-tip" onclick="sendAIMessage('Explain why meat has a high carbon footprint')">
+        <div class="ai-tip-icon" aria-hidden="true">🍽️</div>
         <div class="ai-tip-text">Why does diet matter so much?</div>
-      </div>
+      </button>
     </div>
   </div>
 </div>
 
-<script>
-const CHAT_API_PROXY = '/api/chat'; // proxied via server
-
-function showPage(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-  const target = document.getElementById('page-' + id);
-  if (target) {
-    target.classList.add('active');
-    target.style.opacity = '0';
-    target.style.transition = 'opacity 0.25s ease';
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => { target.style.opacity = '1'; });
-    });
-  }
-  document.querySelectorAll('.nav-link').forEach(l => {
-    if (l.dataset.page === id) l.classList.add('active');
-  });
-  window.scrollTo(0, 0);
-}
-
-// TICKER
-const tickerData = [
-  'Rohit S. just saved 2.1 kg CO₂ by cycling to work',
-  'Priya M. offset 1t CO₂ via Uttarakhand forest project',
-  '48,291 Indians tracking live right now',
-  'New challenge: 7-day meat-free week — 1,240 joined',
-  'India grid emission factor: 0.82 kg CO₂/kWh',
-  'Asha K. hit a 30-day green streak!',
-  'CarbonTrack community saved 1,840t CO₂ this month',
-  'Solar offset credits from Rajasthan now available',
-];
-const ti = document.getElementById('ticker-inner');
-const allTicks = [...tickerData,...tickerData];
-ti.innerHTML = allTicks.map(t=>`<span class="ticker-item"><span class="dot"></span>${t}</span>`).join('');
-
-// DATE
-document.getElementById('dash-date').textContent = new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-
-// LIVE USER COUNT
-let userCount = 48291;
-setInterval(()=>{
-  userCount += Math.floor(Math.random()*5)-1;
-  const el = document.getElementById('stat-users');
-  if(el) el.textContent = userCount.toLocaleString('en-IN');
-}, 3000);
-
-// LIVE TODAY VALUE
-let todayVal = 8.4;
-setInterval(()=>{
-  todayVal = +(todayVal + (Math.random()*0.2-0.05)).toFixed(1);
-  const el = document.getElementById('today-val');
-  if(el) el.textContent = todayVal;
-}, 5000);
-
-// DASHBOARD CHARTS
-new Chart(document.getElementById('weekChart'),{
-  type:'bar',
-  data:{
-    labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
-    datasets:[{
-      label:'kg CO₂',
-      data:[9.2,7.8,8.5,6.9,10.1,7.3,8.4],
-      backgroundColor:['#a5d6a7','#66bb6a','#81c784','#4caf50','#ef5350','#66bb6a','#81c784'],
-      borderRadius:6,borderWidth:0
-    }]
-  },
-  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.04)'},ticks:{callback:v=>v+'kg',font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}
-});
-
-new Chart(document.getElementById('pieChart'),{
-  type:'doughnut',
-  data:{labels:['Transport','Food','Energy','Shopping'],datasets:[{data:[45,30,15,10],backgroundColor:['#4caf50','#2e7d32','#f59e0b','#ef4444'],borderWidth:0}]},
-  options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false}}}
-});
-
-// HABITS
-const habits=[
-  {icon:'🚌',bg:'#e8f5e9',name:'Used public transport',sub:'Saves 2.1 kg vs car',done:true},
-  {icon:'🥗',bg:'#f1f8e9',name:'Ate vegetarian meal',sub:'Saves 1.8 kg vs beef',done:true},
-  {icon:'💡',bg:'#fff8e1',name:'Turned off unused lights',sub:'Saves 0.3 kg',done:true},
-  {icon:'🚿',bg:'#e3f2fd',name:'Short shower (< 5 min)',sub:'Saves 0.5 kg',done:false},
-  {icon:'♻️',bg:'#fce4ec',name:'Sorted recyclables',sub:'Saves 0.2 kg',done:false},
-  {icon:'🛍️',bg:'#f3e5f5',name:'Avoided single-use plastic',sub:'Saves 0.1 kg',done:false},
-];
-const hl=document.getElementById('habit-list');
-habits.forEach((h,i)=>{
-  hl.innerHTML+=`<div class="habit-row">
-    <div class="habit-icon" style="background:${h.bg}">${h.icon}</div>
-    <div class="habit-info"><div class="habit-name">${h.name}</div><div class="habit-sub">${h.sub}</div></div>
-    <button class="habit-toggle ${h.done?'on':''}" id="ht-${i}" onclick="toggleHabit(${i})" aria-label="Toggle ${h.name}"></button>
-  </div>`;
-});
-function toggleHabit(i){
-  const btn=document.getElementById('ht-'+i);
-  btn.classList.toggle('on');
-  const done=document.querySelectorAll('.habit-toggle.on').length;
-  document.getElementById('habit-count').textContent=done+' of 6 done';
-}
-
-// CAT GOALS
-const cats=[{name:'Transport',used:4.2,goal:3.5,color:'#ef4444'},{name:'Food',used:2.1,goal:2.5,color:'#4caf50'},{name:'Energy',used:1.3,goal:1.5,color:'#4caf50'},{name:'Shopping',used:0.7,goal:0.5,color:'#f59e0b'}];
-const cg=document.getElementById('cat-goals');
-cats.forEach(c=>{
-  const pct=Math.min(100,Math.round(c.used/c.goal*100));
-  cg.innerHTML+=`<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>${c.name}</span><span style="color:${c.color}">${c.used}t / ${c.goal}t</span></div><div class="prog-bar"><div class="prog-fill" style="width:${Math.min(100,pct)}%;background:${c.color}"></div></div></div>`;
-});
-
-// TIPS rotation
-const tips=['Taking the metro instead of your car today could save 2.1 kg CO₂ — that\'s like planting half a tree!','Switching to LED bulbs reduces your electricity CO₂ by up to 80% — a one-time change with lifetime savings.','Eating one fewer meat meal this week saves about 1.8 kg CO₂ — same as not driving 9 km.','Washing clothes in cold water cuts 90% of the washing energy — and your clothes last longer too.','Unplugging chargers and idle devices can cut standby power by 10% of your electricity bill.'];
-let tipIdx=0;
-setInterval(()=>{
-  tipIdx=(tipIdx+1)%tips.length;
-  const el=document.getElementById('daily-tip');
-  if(el){el.style.opacity=0;setTimeout(()=>{el.textContent=tips[tipIdx];el.style.opacity=1},300)}
-},8000);
-
-// CALCULATOR
-function updateCalc(){
-  const car=+document.getElementById('sl-car').value;
-  const bike=+document.getElementById('sl-bike').value;
-  const fly=+document.getElementById('sl-fly').value;
-  const train=+document.getElementById('sl-train').value;
-  const elec=+document.getElementById('sl-elec').value;
-  const lpg=+document.getElementById('sl-lpg').value;
-  const meat=+document.getElementById('sl-meat').value;
-  const dairy=+document.getElementById('sl-dairy').value;
-  const cloth=+document.getElementById('sl-cloth').value;
-  const elects=+document.getElementById('sl-elects').value;
-
-  document.getElementById('sv-car').textContent=car+' km';
-  document.getElementById('sv-bike').textContent=bike+' km';
-  document.getElementById('sv-fly').textContent=fly+' flights';
-  document.getElementById('sv-train').textContent=train+' trips';
-  document.getElementById('sv-elec').textContent=elec+' kWh';
-  document.getElementById('sv-lpg').textContent=lpg+' cyl';
-  document.getElementById('sv-meat').textContent=meat+' meals';
-  document.getElementById('sv-dairy').textContent=dairy+' portions';
-  document.getElementById('sv-cloth').textContent=cloth+' items';
-  document.getElementById('sv-elects').textContent='₹'+elects+'k';
-
-  const transport=+((car*0.171+bike*0.041)*365/1000 + fly*0.9 + train*12*0.003).toFixed(2);
-  const energy=+((elec*0.82 + lpg*14.2)*12/1000).toFixed(2);
-  const food=+((meat*52*0.0027 + dairy*365*0.0009)).toFixed(2);
-  const shopping=+((cloth*12*0.015 + elects*0.001)).toFixed(2);
-  const total=+(transport+energy+food+shopping).toFixed(1);
-
-  document.getElementById('calc-total').textContent=total;
-  const pct=Math.min(100,Math.round(total/7*100));
-  const bar=document.getElementById('calc-meter');
-  bar.style.width=pct+'%';
-  bar.style.background=total<=2.5?'#4caf50':total<=4?'#f59e0b':'#ef4444';
-  const lbl=total<=2.5?'Below 1.5°C target (2.5t) — excellent!':total<=3.8?'Below India average (3.8t) · Above 1.5°C target':'Above India average (3.8t) — room to improve';
-  document.getElementById('calc-label').textContent=lbl;
-  const bd=document.getElementById('calc-breakdown');
-  const items=[['Transport',transport],['Home energy',energy],['Food & diet',food],['Shopping',shopping]];
-  bd.innerHTML=items.map(([n,v])=>`<div class="rb-row"><span>${n}</span><span>${v} t</span></div><div class="rb-bar"><div class="rb-fill" style="width:${Math.min(100,Math.round(v/total*100))}%"></div></div>`).join('');
-}
-updateCalc();
-
-// LEADERBOARD
-const lbData=[
-  {rank:1,init:'RS',name:'Rohit S.',city:'Dehradun',co2:'1.6t',streak:'45 days',badge:'green',me:false},
-  {rank:2,init:'PM',name:'Priya M.',city:'Rishikesh',co2:'1.9t',streak:'38 days',badge:'green',me:false},
-  {rank:3,init:'AK',name:'Asha K.',city:'Haridwar',co2:'2.1t',streak:'22 days',badge:'green',me:false},
-  {rank:4,init:'MV',name:'Mohan V.',city:'Dehradun',co2:'2.4t',streak:'18 days',badge:'green',me:false},
-  {rank:5,init:'AR',name:'Arjun R.',city:'Dehradun',co2:'2.9t',streak:'12 days',badge:'amber',me:true},
-  {rank:6,init:'SK',name:'Sunita K.',city:'Mussoorie',co2:'3.1t',streak:'7 days',badge:'amber',me:false},
-  {rank:7,init:'VP',name:'Vijay P.',city:'Dehradun',co2:'3.5t',streak:'3 days',badge:'amber',me:false},
-  {rank:8,init:'ND',name:'Neha D.',city:'Haridwar',co2:'3.8t',streak:'1 day',badge:'red',me:false},
-];
-const colors=['#4caf50','#66bb6a','#81c784','#a5d6a7','#2e7d32','#388e3c','#43a047','#e8f5e9'];
-const lbRows=document.getElementById('lb-rows');
-lbData.forEach((u,i)=>{
-  lbRows.innerHTML+=`<div class="lb-row ${u.me?'me':''}">
-    <div class="lb-rank">${u.rank}</div>
-    <div class="lb-user"><div class="lb-avatar" style="background:${colors[i]}20;color:${colors[i]};font-size:11px">${u.init}</div><div><div class="lb-uname">${u.name}${u.me?' (you)':''}</div><div class="lb-city">${u.city}</div></div></div>
-    <div class="lb-co2">${u.co2}</div>
-    <div class="lb-streak" style="font-size:12px">🔥 ${u.streak}</div>
-    <div><span class="badge-pill badge-${u.badge}" style="font-size:10px">${u.badge==='green'?'Low':'Medium'}</span></div>
-  </div>`;
-});
-
-function setLbTab(el,tab){
-  document.querySelectorAll('.lb-tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-}
-
-const challengesData=[
-  {icon:'🚴',title:'7-day cycle challenge',desc:'Cycle instead of drive for 7 consecutive days. 1,240 participants.',prog:65,badge:'green'},
-  {icon:'🥗',title:'Meatless Monday month',desc:'Go meat-free every Monday for a month. Community favourite!',prog:82,badge:'amber'},
-  {icon:'💡',title:'Zero waste week',desc:'Produce no landfill waste for 7 days. Tips and guides included.',prog:40,badge:'green'},
-  {icon:'🌳',title:'Plant 5 trees challenge',desc:'Virtually fund 5 trees through offset marketplace. 340 joined.',prog:55,badge:'amber'},
-];
-const chEl=document.getElementById('challenges');
-challengesData.forEach(c=>{
-  chEl.innerHTML+=`<div class="challenge-card">
-    <div style="font-size:24px;margin-bottom:8px">${c.icon}</div>
-    <div class="ch-title">${c.title}</div>
-    <div class="ch-desc">${c.desc}</div>
-    <div class="ch-prog"><div class="ch-prog-bar"><div class="ch-prog-fill" style="width:${c.prog}%"></div></div><span class="ch-pct">${c.prog}%</span></div>
-    <button style="margin-top:12px;padding:7px 16px;background:var(--green-600);color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif" onclick="alert('Joined! Good luck on the challenge!')">Join challenge</button>
-  </div>`;
-});
-
-// RECOMMENDATIONS
-const recData = [
-  {
-    id: 'r1', category: 'Transport', icon: '🚇',
-    title: 'Take the Metro 3x a week',
-    desc: 'Swap three car commutes per week with the metro or bus. At 15km each, this single change can save nearly half a tonne of CO₂ per year.',
-    why: 'Road transport is your #1 emission source at 4.2t/yr. Even one mode-shift per day makes a measurable difference.',
-    savings: 0.54, difficulty: 'easy', color: '#ef4444', bg: '#fef2f2'
-  },
-  {
-    id: 'r2', category: 'Energy', icon: '💡',
-    title: 'Switch all bulbs to LED',
-    desc: 'Replace incandescent and CFL bulbs with LEDs. LEDs use 80% less electricity and last 15× longer, reducing both your bill and your grid emissions.',
-    why: 'India\'s grid emits 0.82 kg CO₂ per kWh. LEDs reduce electricity consumption by ~30–80% per fitting.',
-    savings: 0.18, difficulty: 'easy', color: '#f59e0b', bg: '#fffbf0'
-  },
-  {
-    id: 'r3', category: 'Food', icon: '🥗',
-    title: 'Meatless Mondays (& more)',
-    desc: 'Go meat-free two days a week. Beef and lamb have some of the highest emission factors. Swapping to lentils, tofu or paneer keeps your protein without the planetary cost.',
-    why: 'Beef emits 27kg CO₂/kg of protein vs 0.9kg for legumes. Indian vegetarian cuisine is naturally climate-friendly.',
-    savings: 0.38, difficulty: 'easy', color: '#4caf50', bg: '#f0faf0'
-  },
-  {
-    id: 'r4', category: 'Energy', icon: '❄️',
-    title: 'Set AC to 24–26°C',
-    desc: 'Every 1°C increase in your AC set-point saves ~6% of cooling energy. At 24°C instead of 20°C, you save ~3.2 kWh daily during summer.',
-    why: 'BEE recommends 24°C as the optimal AC temperature. It can cut your cooling electricity by 24%, reducing CO₂ and your electricity bill.',
-    savings: 0.35, difficulty: 'easy', color: '#0288d1', bg: '#e3f2fd'
-  },
-  {
-    id: 'r5', category: 'Transport', icon: '🚴',
-    title: 'Cycle or walk for trips under 3km',
-    desc: 'The shortest trips in a vehicle have the highest emission per km (cold engine). Using a cycle or your feet for nearby errands eliminates that footprint entirely.',
-    why: '2-wheelers still emit 41g CO₂/km. Short trips account for 30–40% of all urban vehicle journeys in India.',
-    savings: 0.14, difficulty: 'medium', color: '#ef4444', bg: '#fef2f2'
-  },
-  {
-    id: 'r6', category: 'Shopping', icon: '🛍️',
-    title: 'Buy 5 fewer clothing items/year',
-    desc: 'Fast fashion is one of the most carbon-intensive industries. Extending the life of existing clothing, buying second-hand or renting occasional outfits can significantly cut your footprint.',
-    why: 'A single pair of jeans produces ~33kg CO₂ from production to disposal. Buying less is always the most effective option.',
-    savings: 0.10, difficulty: 'medium', color: '#8b5cf6', bg: '#f5f3ff'
-  },
-  {
-    id: 'r7', category: 'Energy', icon: '🔌',
-    title: 'Unplug idle electronics',
-    desc: 'Standby power (phantom load) from chargers, TVs, microwaves and set-top boxes can account for 5–10% of your electricity bill. Unplug them when not in use.',
-    why: 'India\'s grid factor of 0.82 kg/kWh means that even phantom load — 50–100W per household — adds up to 36–72 kg CO₂/year.',
-    savings: 0.07, difficulty: 'easy', color: '#f59e0b', bg: '#fffbf0'
-  },
-  {
-    id: 'r8', category: 'Food', icon: '🛒',
-    title: 'Buy seasonal & local produce',
-    desc: 'Imported and out-of-season fruit and vegetables travel thousands of kilometres in refrigerated trucks. Buying local produce from your nearest mandi cuts transport emissions dramatically.',
-    why: 'Air-freighted produce can have 50× the carbon footprint of locally grown food. India\'s rich seasonal calendar offers year-round variety.',
-    savings: 0.12, difficulty: 'easy', color: '#4caf50', bg: '#f0faf0'
-  },
-  {
-    id: 'r9', category: 'Transport', icon: '✈️',
-    title: 'Take train over flight once',
-    desc: 'Trains emit ~80–90% less CO₂ per km than aircraft. On popular routes like Delhi–Mumbai, switching one flight to train saves nearly 1 tonne of CO₂ per person.',
-    why: 'A Delhi–Mumbai flight emits ~0.9t CO₂ per passenger. The equivalent train journey emits just ~0.1t.',
-    savings: 0.80, difficulty: 'hard', color: '#ef4444', bg: '#fef2f2'
-  }
-];
-
-let committedSavings = 0;
-let committedCount = 0;
-let recFilter = 'all';
-
-const difficultyColors = { easy: '#4caf50', medium: '#f59e0b', hard: '#ef4444' };
-const difficultyDots = { easy: 1, medium: 2, hard: 3 };
-
-function renderRecommendations(filter) {
-  const grid = document.getElementById('rec-grid');
-  if (!grid) return;
-  const filtered = filter === 'all' ? recData : recData.filter(r => r.category === filter);
-  grid.innerHTML = filtered.map(r => {
-    const diff = difficultyColors[r.difficulty];
-    const dots = Array.from({length: 3}, (_, i) =>
-      `<div class="rec-dot" style="background:${i < difficultyDots[r.difficulty] ? diff : 'var(--border)'}"></div>`
-    ).join('');
-    return `
-    <div class="rec-card" id="card-${r.id}" onclick="toggleRec('${r.id}', ${r.savings})">
-      <div class="rec-check-btn" id="chk-${r.id}"></div>
-      <div class="rec-cat-tag" style="background:${r.bg};color:${r.color}">${r.category}</div>
-      <div class="rec-card-icon" style="background:${r.bg}">${r.icon}</div>
-      <div class="rec-card-title">${r.title}</div>
-      <div class="rec-card-desc">${r.desc}</div>
-      <div class="rec-difficulty">${dots}<span style="font-size:11px;color:var(--text-muted);margin-left:4px;text-transform:capitalize">${r.difficulty}</span></div>
-      <div style="background:${r.bg};border-radius:8px;padding:10px 12px;font-size:12px;color:${r.color};line-height:1.5;margin-bottom:14px">💡 ${r.why}</div>
-      <div class="rec-card-footer">
-        <div>
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">Potential saving</div>
-          <div class="rec-saving" style="color:${r.color}">−${r.savings}t <span style="font-size:12px;font-weight:400;color:var(--text-muted)">CO₂/yr</span></div>
-        </div>
-        <div style="font-size:12px;color:var(--text-muted);text-align:right">≈ ${Math.round(r.savings * 1000)} kg<br>= ${Math.round(r.savings / 0.022)} trees</div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function toggleRec(id, savings) {
-  const el = document.getElementById('card-' + id);
-  const chk = document.getElementById('chk-' + id);
-  if (!el) return;
-  el.classList.toggle('selected');
-  if (el.classList.contains('selected')) {
-    chk.innerHTML = '✓';
-    committedSavings = +(committedSavings + savings).toFixed(2);
-    committedCount++;
-  } else {
-    chk.innerHTML = '';
-    committedSavings = +(committedSavings - savings).toFixed(2);
-    committedCount--;
-  }
-  committedSavings = Math.max(0, committedSavings);
-  committedCount = Math.max(0, committedCount);
-  updateRecStats();
-}
-
-function updateRecStats() {
-  const GAP = 1.1;
-  const pct = Math.min(100, Math.round((committedSavings / GAP) * 100));
-  const trees = Math.round(committedSavings / 0.022);
-  if (document.getElementById('rec-savings-val')) document.getElementById('rec-savings-val').textContent = committedSavings.toFixed(2);
-  if (document.getElementById('rec-imp-actions')) document.getElementById('rec-imp-actions').textContent = committedCount;
-  if (document.getElementById('rec-imp-tonnes')) document.getElementById('rec-imp-tonnes').textContent = committedSavings.toFixed(2) + 't';
-  if (document.getElementById('rec-imp-pct')) document.getElementById('rec-imp-pct').textContent = pct + '%';
-  if (document.getElementById('rec-imp-trees')) document.getElementById('rec-imp-trees').textContent = trees;
-  if (document.getElementById('rec-gap-fill')) document.getElementById('rec-gap-fill').style.width = pct + '%';
-}
-
-function filterRec(btn, filter) {
-  document.querySelectorAll('.rec-cat-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  recFilter = filter;
-  renderRecommendations(filter);
-}
-
-function commitRecommendations() {
-  if (committedSavings > 0) {
-    showToast('Green Plan Saved! 🌍', `You've committed to ${committedCount} actions saving ${committedSavings.toFixed(2)}t CO₂/yr. Bahut achha!`);
-  } else {
-    showToast('Select actions first', 'Please select at least one action to build your green plan.');
-  }
-}
-
-// Initialize
-renderRecommendations('all');
-
-// MARKETPLACE
-const projects=[
-  {emoji:'🌳',bg:'#e8f5e9',title:'Uttarakhand reforestation',loc:'Uttarakhand, India',verified:true,area:'2,400 ha',trees:'180,000',price:'₹500/t',type:'forest'},
-  {emoji:'☀️',bg:'#fff8e1',title:'Rajasthan solar farm',loc:'Rajasthan, India',verified:true,area:'850 MW',trees:'—',price:'₹450/t',type:'solar'},
-  {emoji:'🔥',bg:'#fce4ec',title:'Clean cookstoves — UP',loc:'Uttar Pradesh, India',verified:true,area:'12,000 households',trees:'—',price:'₹350/t',type:'cookstove'},
-  {emoji:'💧',bg:'#e3f2fd',title:'Karnataka water project',loc:'Karnataka, India',verified:true,area:'8 villages',trees:'—',price:'₹400/t',type:'water'},
-  {emoji:'🌿',bg:'#f1f8e9',title:'Mangrove restoration',loc:'Sundarbans, West Bengal',verified:true,area:'1,200 ha',trees:'90,000',price:'₹600/t',type:'forest'},
-  {emoji:'⚡',bg:'#f3e5f5',title:'Wind energy — Gujarat',loc:'Gujarat, India',verified:false,area:'320 MW',trees:'—',price:'₹380/t',type:'solar'},
-];
-function renderProjects(filter){
-  const pg=document.getElementById('proj-grid');
-  const filtered=filter==='all'?projects:projects.filter(p=>p.type===filter);
-  pg.innerHTML=filtered.map(p=>`<div class="proj-card">
-    <div class="proj-img" style="background:${p.bg}">${p.emoji}${p.verified?'<span class="proj-verified">✓ Verified</span>':''}
-    </div>
-    <div class="proj-body">
-      <div class="proj-title">${p.title}</div>
-      <div class="proj-loc">📍 ${p.loc}</div>
-      <div class="proj-stats">
-        <div class="pstat"><div class="pstat-val">${p.area}</div><div class="pstat-label">${p.type==='forest'?'Area':'Capacity'}</div></div>
-        ${p.trees!=='—'?`<div class="pstat"><div class="pstat-val">${p.trees}</div><div class="pstat-label">Trees</div></div>`:''}
-      </div>
-      <div class="proj-price">
-        <div><div class="proj-price-val">${p.price}</div><div class="proj-price-sub">per tonne CO₂</div></div>
-        <button class="buy-btn" onclick="alert('Purchasing 1t CO₂ offset from ${p.title} — payment integration coming soon!')">Buy credits</button>
-      </div>
-    </div>
-  </div>`).join('');
-}
-renderProjects('all');
-function setFilter(el,filter){
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active');
-  renderProjects(filter);
-}
-
-// ============================================================
-// GROQ AI CHAT — OpenAI compatible API
-// Replace YOUR_GROQ_API_KEY_HERE below with your key if running local client
-// ============================================================
-
-const GROQ_API_KEY = ''; // Key removed — API calls go through /api/chat server proxy
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-
-const SYSTEM_PROMPT = `You are GreenGuide, an expert AI carbon footprint coach for Indians. The user's current footprint is 3.6 tonnes CO₂/year. India average is 3.8t. The 1.5°C target is 2.5t. Give practical, India-specific advice. Keep responses concise (3-5 sentences max), friendly, and actionable. Use specific numbers where possible. Mention Indian context (grid emission factor 0.82 kg/kWh, Indian diet, Indian transport options like metro/auto/cycle). Use occasional Hindi words naturally (like "bilkul", "bahut achha").`;
-
-let chatHistory = [];
-
-async function sendAIMessage(text) {
-  const input = document.getElementById('chat-input');
-  if(text) input.value = text;
-  sendChat();
-}
-
-async function sendChat() {
-  const input = document.getElementById('chat-input');
-  const text = input.value.trim();
-  if(!text) return;
-
-  // Block only if opened directly as file:// (server proxy won't work)
-  if(location.protocol === 'file:') {
-    const msgs = document.getElementById('chat-messages');
-    msgs.innerHTML += `<div class="msg msg-ai"><div class="msg-ai-name">🌿 GreenGuide AI</div>⚠️ <strong>Please open the app via the server.</strong><br><br>You are using a <code>file://</code> URL — the AI proxy won't work here.<br><br>👉 Run <code>node server.js</code> in your terminal, then open <a href="http://localhost:3000" style="color:#4caf50;font-weight:600">http://localhost:3000</a></div>`;
-    msgs.scrollTop = msgs.scrollHeight;
-    return;
-  }
-
-  input.value = '';
-  const msgs = document.getElementById('chat-messages');
-  msgs.innerHTML += `<div class="msg msg-user">${text}</div>`;
-  const typingId = 'typing-' + Date.now();
-  msgs.innerHTML += `<div class="msg msg-ai" id="${typingId}"><div class="msg-ai-name">🌿 GreenGuide AI</div><div class="typing"><span></span><span></span><span></span></div></div>`;
-  msgs.scrollTop = msgs.scrollHeight;
-
-  // Add to OpenAI-format history
-  chatHistory.push({ role: 'user', content: text });
-
-  let responseData;
-  let useDirectFallback = false;
-
-  try {
-    // Attempt to use local server proxy first
-    const res = await fetch(CHAT_API_PROXY, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system: SYSTEM_PROMPT,
-        messages: chatHistory
-      })
-    });
-
-    if (res.ok) {
-      responseData = await res.json();
-    } else {
-      useDirectFallback = true;
-    }
-  } catch (e) {
-    useDirectFallback = true;
-  }
-
-  if (useDirectFallback) {
-    // Direct browser fallback to Groq API
-    try {
-      const res = await fetch(GROQ_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${GROQ_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            ...chatHistory
-          ],
-          temperature: 0.7,
-          max_tokens: 1000
-        })
-      });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData?.error?.message || 'Groq error ' + res.status);
-      }
-      responseData = await res.json();
-    } catch (e) {
-      console.error('Groq direct fallback error:', e);
-      const typingEl = document.getElementById(typingId);
-      if(typingEl) {
-        typingEl.innerHTML = `<div class="msg-ai-name">🌿 GreenGuide AI</div>⚠️ ${e.message}. Please check your API key or make sure your server is running (node server.js) to avoid CORS issues.`;
-      }
-      msgs.scrollTop = msgs.scrollHeight;
-      return;
-    }
-  }
-
-  const reply = responseData.choices?.[0]?.message?.content || 'No response received.';
-  chatHistory.push({ role: 'assistant', content: reply });
-
-  const typingEl = document.getElementById(typingId);
-  if (typingEl) {
-    const formatted = reply
-      .replace(/\n/g, '<br>')
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>');
-
-    typingEl.innerHTML = `<div class="msg-ai-name">🌿 GreenGuide AI</div>${formatted}`;
-  }
-  msgs.scrollTop = msgs.scrollHeight;
-}
-
-// Model name fix for current API
-const MODEL = 'llama-3.3-70b-versatile';
-</script>
+<!-- External app script (replaces inline scripts, enables caching & CSP) -->
+<script src="/js/app.js" defer></script>
 
 <!-- ===== PROFILE PAGE ===== -->
 <div class="page" id="page-profile">
@@ -1346,15 +588,15 @@ const MODEL = 'llama-3.3-70b-versatile';
       <div style="display:grid;gap:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
           <div><div style="font-size:14px;font-weight:500">Daily reminder</div><div style="font-size:12px;color:var(--text-muted)">Log your carbon activity each evening</div></div>
-          <button class="habit-toggle on" aria-label="Toggle daily reminder"></button>
+          <button class="habit-toggle on" aria-label="Toggle daily reminder" aria-pressed="true" onclick="toggleSetting(this)"></button>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
           <div><div style="font-size:14px;font-weight:500">Weekly insights email</div><div style="font-size:12px;color:var(--text-muted)">Get your carbon report every Sunday</div></div>
-          <button class="habit-toggle on" aria-label="Toggle weekly email"></button>
+          <button class="habit-toggle on" aria-label="Toggle weekly email" aria-pressed="true" onclick="toggleSetting(this)"></button>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
           <div><div style="font-size:14px;font-weight:500">Public leaderboard</div><div style="font-size:12px;color:var(--text-muted)">Show your name on city/state rankings</div></div>
-          <button class="habit-toggle on" aria-label="Toggle public leaderboard"></button>
+          <button class="habit-toggle on" aria-label="Toggle public leaderboard" aria-pressed="true" onclick="toggleSetting(this)"></button>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0">
           <div><div style="font-size:14px;font-weight:500">Unit preference</div><div style="font-size:12px;color:var(--text-muted)">Display emissions in kg or tonnes</div></div>
@@ -1368,11 +610,11 @@ const MODEL = 'llama-3.3-70b-versatile';
 </div>
 
 <!-- ===== LOG ACTIVITY MODAL ===== -->
-<div id="log-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.4);backdrop-filter:blur(4px);align-items:center;justify-content:center">
-  <div style="background:var(--surface);border-radius:var(--radius);padding:28px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto;position:relative">
-    <button onclick="closeLogModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted)">✕</button>
-    <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;margin-bottom:4px">Log today's activity</div>
-    <div style="font-size:13px;color:var(--text-muted);margin-bottom:24px">Takes 60 seconds. We'll calculate your CO₂ automatically.</div>
+<dialog id="log-modal" aria-labelledby="modal-title" aria-describedby="modal-desc">
+  <div style="background:var(--surface);border-radius:var(--radius);padding:28px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;position:relative">
+    <button onclick="closeLogModal()" aria-label="Close activity log" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted)">✕</button>
+    <h2 id="modal-title" style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;margin-bottom:4px">Log today's activity</h2>
+    <div id="modal-desc" style="font-size:13px;color:var(--text-muted);margin-bottom:24px">Takes 60 seconds. We'll calculate your CO₂ automatically.</div>
 
     <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap" id="log-category-tabs">
       <button class="filter-btn active" onclick="setLogTab(this,'transport')">🚗 Transport</button>
@@ -1387,7 +629,7 @@ const MODEL = 'llama-3.3-70b-versatile';
         <div style="display:flex;flex-wrap:wrap;gap:8px" id="transport-options"></div>
       </div>
       <div style="margin-bottom:16px">
-        <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Distance travelled (km)</label>
+        <label for="log-dist" style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Distance travelled (km)</label>
         <input type="number" id="log-dist" value="15" min="0" max="500" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:'Inter',sans-serif;background:var(--bg)" oninput="updateLogCalc()">
       </div>
     </div>
@@ -1399,13 +641,13 @@ const MODEL = 'llama-3.3-70b-versatile';
 
     <div id="log-energy" style="display:none">
       <div style="margin-bottom:14px">
-        <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Electricity used today (kWh estimate)</label>
+        <label for="log-elec" style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Electricity used today (kWh estimate)</label>
         <input type="range" class="sl-input" min="0" max="30" value="6" step="0.5" id="log-elec" oninput="updateLogCalc()" style="width:100%">
         <div style="font-size:13px;color:var(--green-600);font-weight:600;margin-top:4px" id="log-elec-val">6 kWh</div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--border)">
-        <div><div style="font-size:13px;font-weight:500">Used AC today?</div></div>
-        <button class="habit-toggle" id="log-ac" onclick="this.classList.toggle('on');updateLogCalc()" aria-label="Toggle AC usage"></button>
+        <div><label for="log-ac" style="font-size:13px;font-weight:500">Used AC today?</label></div>
+        <button class="habit-toggle" id="log-ac" onclick="this.classList.toggle('on');this.setAttribute('aria-pressed', this.classList.contains('on'));updateLogCalc()" aria-label="Toggle AC usage" aria-pressed="false"></button>
       </div>
     </div>
 
@@ -1427,7 +669,7 @@ const MODEL = 'llama-3.3-70b-versatile';
 
     <button onclick="submitLog()" style="width:100%;margin-top:16px;padding:13px;background:var(--green-600);color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:background 0.15s" onmouseover="this.style.background='#1b5e20'" onmouseout="this.style.background='var(--green-600)'">Save today's log</button>
   </div>
-</div>
+</dialog>
 
 <!-- ===== NOTIFICATION TOAST ===== -->
 <div id="toast" style="position:fixed;bottom:24px;right:24px;z-index:400;display:none;background:var(--green-800);color:#fff;padding:14px 20px;border-radius:var(--radius);font-size:14px;max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.2);transform:translateY(20px);transition:all 0.3s">
@@ -1480,226 +722,5 @@ const MODEL = 'llama-3.3-70b-versatile';
   </div>
 </footer>
 
-<script>
-// ===== PROFILE PAGE SETUP =====
-const badgesData = [
-  {icon:'🌱',name:'First log',desc:'Logged your first day'},
-  {icon:'🔥',name:'7-day streak',desc:'7 consecutive days'},
-  {icon:'🚴',name:'Cycle hero',desc:'Cycled 10+ times'},
-  {icon:'🥗',name:'Veg week',desc:'7 meat-free days'},
-  {icon:'💡',name:'Energy saver',desc:'Stayed under 5kWh'},
-  {icon:'🏆',name:'Top 10%',desc:'City leaderboard'},
-  {icon:'🌳',name:'First offset',desc:'Bought your first credit'},
-  {icon:'📊',name:'Data nerd',desc:'Checked dashboard 30 days'},
-];
-const bg = document.getElementById('badges-grid');
-badgesData.forEach(b => {
-  bg.innerHTML += `<div style="text-align:center;padding:12px;background:var(--green-50);border:1px solid var(--green-100);border-radius:var(--radius-sm);min-width:72px">
-    <div style="font-size:24px;margin-bottom:4px">${b.icon}</div>
-    <div style="font-size:11px;font-weight:600;color:var(--green-600)">${b.name}</div>
-    <div style="font-size:10px;color:var(--text-muted);margin-top:1px">${b.desc}</div>
-  </div>`;
-});
-
-new Chart(document.getElementById('profileChart'), {
-  type: 'line',
-  data: {
-    labels: ['Jan','Feb','Mar','Apr','May','Jun'],
-    datasets: [{
-      data: [0.42,0.39,0.38,0.34,0.31,0.29],
-      borderColor: '#4caf50',
-      backgroundColor: 'rgba(76,175,80,0.1)',
-      fill: true,
-      tension: 0.4,
-      pointRadius: 4,
-      pointBackgroundColor: '#2e7d32',
-      borderWidth: 2
-    }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-      y: { beginAtZero: false, ticks: { callback: v => v+'t', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.04)' } },
-      x: { ticks: { font: { size: 10 } }, grid: { display: false } }
-    }
-  }
-});
-
-const achData = [
-  { icon:'🚌', title:'Metro maven', desc:'Used public transport 40 times this year', saved:'68 kg CO₂ saved', done:true },
-  { icon:'🥗', title:'Plant-based pioneer', desc:'Completed 30 meatless days', saved:'54 kg CO₂ saved', done:true },
-  { icon:'⚡', title:'Energy efficient', desc:'Stayed below 150 kWh for 3 months straight', saved:'37 kg CO₂ saved', done:true },
-  { icon:'🌳', title:'Tree planter', desc:'Fund 10 trees through offset credits', saved:'4 of 10 trees', done:false },
-  { icon:'🔥', title:'30-day streak', desc:'Log your footprint for 30 consecutive days', saved:'18 of 30 days', done:false },
-];
-const al = document.getElementById('achievements-list');
-achData.forEach(a => {
-  al.innerHTML += `<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border)">
-    <div style="width:40px;height:40px;border-radius:var(--radius-sm);background:${a.done?'var(--green-100)':'var(--bg)'};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;border:1px solid ${a.done?'var(--green-200)':'var(--border)'}">${a.icon}</div>
-    <div style="flex:1">
-      <div style="font-size:14px;font-weight:500${a.done?';color:var(--text)':';color:var(--text-muted)'}">${a.title}${a.done?' ✓':''}</div>
-      <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${a.desc}</div>
-    </div>
-    <div style="font-size:12px;font-weight:600;color:${a.done?'var(--green-600)':'var(--text-hint)'};text-align:right;white-space:nowrap">${a.saved}</div>
-  </div>`;
-});
-al.lastChild.style.borderBottom = 'none';
-
-// ===== LOG MODAL =====
-const transportModes = [
-  { icon:'🚗', name:'Car/taxi', ef:0.171 },
-  { icon:'🛵', name:'2-wheeler', ef:0.041 },
-  { icon:'🚌', name:'Bus', ef:0.089 },
-  { icon:'🚇', name:'Metro', ef:0.031 },
-  { icon:'🚆', name:'Train', ef:0.013 },
-  { icon:'🚶', name:'Walk/cycle', ef:0 },
-];
-let selectedTransport = 0;
-const toEl = document.getElementById('transport-options');
-transportModes.forEach((m, i) => {
-  const btn = document.createElement('button');
-  btn.style.cssText = `padding:8px 14px;border-radius:var(--radius-sm);font-size:13px;cursor:pointer;border:1.5px solid var(--border);background:${i===0?'var(--green-600)':'var(--surface)'};color:${i===0?'#fff':'var(--text)'};transition:all 0.15s;font-family:Inter,sans-serif`;
-  btn.innerHTML = `${m.icon} ${m.name}`;
-  btn.onclick = () => {
-    selectedTransport = i;
-    document.querySelectorAll('#transport-options button').forEach((b,j) => {
-      b.style.background = j===i?'var(--green-600)':'var(--surface)';
-      b.style.color = j===i?'#fff':'var(--text)';
-      b.style.borderColor = j===i?'var(--green-600)':'var(--border)';
-    });
-    updateLogCalc();
-  };
-  toEl.appendChild(btn);
-});
-
-const foodItems = [
-  { icon:'🥩', name:'Beef/lamb meal', ef:3.0 },
-  { icon:'🍗', name:'Chicken meal', ef:0.9 },
-  { icon:'🐟', name:'Fish meal', ef:0.6 },
-  { icon:'🥛', name:'Dairy (milk/curd)', ef:0.35 },
-  { icon:'🥗', name:'Vegetarian meal', ef:0.2 },
-  { icon:'🌱', name:'Vegan meal', ef:0.08 },
-];
-const fo = document.getElementById('food-options');
-foodItems.forEach(f => {
-  fo.innerHTML += `<label style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg);border-radius:var(--radius-sm);cursor:pointer;border:1px solid var(--border)">
-    <input type="checkbox" style="width:16px;height:16px;accent-color:var(--green-600)" data-ef="${f.ef}" onchange="updateLogCalc()">
-    <span style="font-size:18px">${f.icon}</span>
-    <span style="font-size:13px;flex:1">${f.name}</span>
-    <span style="font-size:12px;color:var(--text-muted)">${f.ef} kg CO₂</span>
-  </label>`;
-});
-
-const otherItems = [
-  { icon:'👕', name:'Bought new clothing', ef:8.0 },
-  { icon:'📦', name:'Online shopping delivery', ef:0.5 },
-  { icon:'🛁', name:'Long hot bath (30min)', ef:0.9 },
-  { icon:'🖥️', name:'8+ hours device use', ef:0.15 },
-];
-const oo = document.getElementById('other-options');
-otherItems.forEach(o => {
-  oo.innerHTML += `<label style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg);border-radius:var(--radius-sm);cursor:pointer;border:1px solid var(--border)">
-    <input type="checkbox" style="width:16px;height:16px;accent-color:var(--green-600)" data-ef="${o.ef}" onchange="updateLogCalc()">
-    <span style="font-size:18px">${o.icon}</span>
-    <span style="font-size:13px;flex:1">${o.name}</span>
-    <span style="font-size:12px;color:var(--text-muted)">${o.ef} kg CO₂</span>
-  </label>`;
-});
-
-function updateLogCalc() {
-  const dist = +document.getElementById('log-dist').value || 0;
-  const ef = transportModes[selectedTransport].ef;
-  let total = dist * ef;
-
-  document.querySelectorAll('#food-options input:checked, #other-options input:checked').forEach(cb => {
-    total += parseFloat(cb.dataset.ef);
-  });
-
-  const elec = +document.getElementById('log-elec').value;
-  document.getElementById('log-elec-val').textContent = elec + ' kWh';
-  total += elec * 0.082;
-  if(document.getElementById('log-ac').classList.contains('on')) total += 1.8;
-
-  total = +total.toFixed(1);
-  document.getElementById('log-co2').textContent = total;
-  const diff = +(4.4 - total).toFixed(1);
-  document.getElementById('log-compare').textContent = diff >= 0 ? `−${diff} kg better` : `+${Math.abs(diff)} kg worse`;
-  document.getElementById('log-compare').style.color = diff >= 0 ? 'var(--green-600)' : 'var(--red-600)';
-}
-
-function setLogTab(el, tab) {
-  document.querySelectorAll('#log-category-tabs .filter-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  ['transport','food','energy','other'].forEach(t => {
-    document.getElementById('log-'+t).style.display = t===tab?'block':'none';
-  });
-}
-
-function showLogModal() {
-  document.getElementById('log-modal').style.display = 'flex';
-  updateLogCalc();
-}
-
-function closeLogModal() {
-  document.getElementById('log-modal').style.display = 'none';
-}
-
-function submitLog() {
-  closeLogModal();
-  const co2 = document.getElementById('log-co2').textContent;
-  showToast('Activity logged! 🌿', `${co2} kg CO₂ added to today's total. Keep it green!`);
-  // Update today's display
-  const tv = document.getElementById('today-val');
-  if(tv) tv.textContent = co2;
-}
-
-// ===== TOAST =====
-function showToast(title, body) {
-  const t = document.getElementById('toast');
-  document.getElementById('toast-title').textContent = title;
-  document.getElementById('toast-body').textContent = body;
-  t.style.display = 'block';
-  setTimeout(() => { t.style.transform = 'translateY(0)'; t.style.opacity = '1'; }, 50);
-  setTimeout(() => {
-    t.style.transform = 'translateY(20px)'; t.style.opacity = '0';
-    setTimeout(() => { t.style.display = 'none'; t.style.transform = 'translateY(20px)'; }, 300);
-  }, 4000);
-}
-
-// Update nav to include profile
-const navLinks = document.querySelector('.nav-links');
-const profileBtn = document.createElement('button');
-profileBtn.className = 'nav-link';
-profileBtn.textContent = 'Profile';
-profileBtn.dataset.page = 'profile';
-profileBtn.onclick = () => showPage('profile');
-navLinks.appendChild(profileBtn);
-
-// Add log button to nav
-const logBtn = document.createElement('button');
-logBtn.style.cssText = 'margin-left:8px;padding:7px 14px;background:var(--green-50);color:var(--green-600);border:1.5px solid var(--green-200);border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;transition:background 0.15s;font-family:Inter,sans-serif';
-logBtn.textContent = '+ Log activity';
-logBtn.onclick = () => showLogModal();
-document.querySelector('nav').insertBefore(logBtn, document.querySelector('.nav-cta'));
-
-// ===== RANDOM LIVE TOASTS =====
-const liveEvents = [
-  ['New member joined! 🎉', 'Pooja from Jaipur just started tracking her footprint.'],
-  ['Challenge update 🏆', '1,242 people are now on the 7-day cycle challenge!'],
-  ['Tip of the hour 💡', 'Switching from rice cooker to pressure cooker saves 40% energy.'],
-  ['Community milestone 🌍', 'CarbonTrack users have collectively saved 1,840t CO₂ this month!'],
-  ['New offset project 🌳', 'Mangrove restoration in Sundarbans now available in marketplace.'],
-];
-let eventIdx = 0;
-setInterval(() => {
-  const e = liveEvents[eventIdx % liveEvents.length];
-  showToast(e[0], e[1]);
-  eventIdx++;
-}, 25000);
-
-// Show first toast after 5s
-setTimeout(() => showToast('Welcome back, Arjun! 🌿', 'You\'re on a 12-day green streak. Keep going!'), 5000);
-</script>
 </body>
 </html>

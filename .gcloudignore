@@ -1,0 +1,9 @@
+# Google Cloud Build / gcloud run deploy exclude list
+# Mirrors .dockerignore
+.git
+.gitignore
+.DS_Store
+.env
+node_modules
+tests
+*.test.js

@@ -1,0 +1,13 @@
+# Docker build context — files to EXCLUDE from the image
+.git
+.gitignore
+.DS_Store
+.env
+.env.example
+.eslintrc.json
+render.yaml
+README.md
+node_modules
+tests
+*.test.js
+*.md
