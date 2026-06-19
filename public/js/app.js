@@ -1142,5 +1142,35 @@ setInterval(() => {
 }, 25000);
 setTimeout(() => showToast('Welcome back, Gaurav! 🌿', 'You\'re on a 12-day green streak. Keep going!'), 5000);
 
+// Add immediate value updating for range inputs for responsive UX
+document.querySelectorAll('.sl-input').forEach(input => {
+  if (input.id.startsWith('sl-')) {
+    input.addEventListener('input', () => {
+      const valEl = document.getElementById(input.id.replace('sl-', 'sv-'));
+      if (valEl) {
+        const units = {
+          'car': ' km',
+          'bike': ' km',
+          'fly': ' flights',
+          'train': ' trips',
+          'elec': ' kWh',
+          'lpg': ' cyl',
+          'meat': ' meals',
+          'dairy': ' portions',
+          'cloth': ' items',
+          'elects': 'k'
+        };
+        const key = input.id.replace('sl-', '');
+        const unit = units[key] || '';
+        if (key === 'elects') {
+          valEl.textContent = '₹' + input.value + unit;
+        } else {
+          valEl.textContent = input.value + unit;
+        }
+      }
+    });
+  }
+});
+
 // Load persisted logged data on startup
 updateDailyLogsUI();

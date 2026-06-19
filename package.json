@@ -8,7 +8,7 @@
     "dev": "node server.js",
     "test": "jest --runInBand --detectOpenHandles",
     "test:coverage": "jest --runInBand --detectOpenHandles --coverage",
-    "lint": "eslint server.js public/js/emissions.js"
+    "lint": "eslint server.js public/js/emissions.js public/js/auth.js public/js/app.js"
   },
   "jest": {
     "coverageThreshold": {
