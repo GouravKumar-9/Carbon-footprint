@@ -441,6 +441,28 @@ function updateCalc() {
   // Update Category Goals on Dashboard
   updateCategoryGoals(results);
 
+  // Update Pie/Doughnut Chart on Dashboard dynamically
+  if (pieChartInstance) {
+    pieChartInstance.data.datasets[0].data = [
+      results.transport,
+      results.food,
+      results.energy,
+      results.shopping
+    ];
+    pieChartInstance.update();
+
+    const pieChartEl = document.getElementById('pieChart');
+    if (pieChartEl) {
+      const pieTable = pieChartEl.nextSibling;
+      if (pieTable && pieTable.className === 'chart-data-table') {
+        const total = results.total || 1;
+        const dataArr = [results.transport, results.food, results.energy, results.shopping];
+        const labelsArr = ['Transport', 'Food', 'Energy', 'Shopping'];
+        pieTable.innerHTML = `<caption>Emission breakdown by category</caption><thead><tr><th>Category</th><th>Share %</th></tr></thead><tbody>${labelsArr.map((l,i)=>`<tr><td>${l}</td><td>${Math.round(dataArr[i] / total * 100)}%</td></tr>`).join('')}</tbody>`;
+      }
+    }
+  }
+
   // Update dashboard pace value
   const paceValEl = document.querySelector('.metric-grid .m-card:nth-child(3) .m-value');
   if (paceValEl) paceValEl.textContent = results.total;
