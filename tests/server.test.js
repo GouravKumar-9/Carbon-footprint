@@ -58,6 +58,14 @@ describe('Express Server Integration & Authentication Tests', () => {
         .send({ messages: [] });
       expect(allowedOriginResponse.headers['access-control-allow-origin']).toBe('http://localhost:3000');
 
+      const renderOriginResponse = await request(app)
+        .post('/api/chat')
+        .set('Origin', 'https://carbon-footprint-gplq.onrender.com')
+        .set('Authorization', `Bearer ${testToken}`)
+        .set('x-skip-csrf', 'true')
+        .send({ messages: [] });
+      expect(renderOriginResponse.headers['access-control-allow-origin']).toBe('https://carbon-footprint-gplq.onrender.com');
+
       const disallowedOriginResponse = await request(app)
         .post('/api/chat')
         .set('Origin', 'http://malicious.com')
