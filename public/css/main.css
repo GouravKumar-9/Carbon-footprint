@@ -427,6 +427,16 @@ nav {
   border: 0;
 }
 
+/* TextInput Focus glow */
+input[type="email"], input[type="password"], input[type="text"] {
+  color: var(--text) !important;
+}
+input[type="email"]:focus, input[type="password"]:focus, input[type="text"]:focus {
+  border-color: var(--green-400) !important;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.25) !important;
+  outline: none !important;
+}
+
 /* Focus visible styles for keyboard navigation */
 :focus-visible {
   outline: 2px solid var(--green-400);

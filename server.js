@@ -13,6 +13,7 @@ const cookieParser = require('cookie-parser');
 
 const app = express();
 app.disable('x-powered-by');
+app.set('trust proxy', 1); // Trust first proxy (e.g. Render) for secure cookies
 
 const PORT       = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET ||
