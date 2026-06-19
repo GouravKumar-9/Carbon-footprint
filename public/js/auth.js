@@ -3,6 +3,11 @@
  * Extracted from app.js to improve code quality and separation of concerns.
  */
 
+// Determine the API base URL depending on environment
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? (window.location.port === '3000' ? '' : 'http://localhost:3000')
+  : (window.location.hostname.includes('onrender.com') ? '' : 'https://carbontrack-india.onrender.com');
+
 // Helper to extract CSRF double-submit token from document.cookie
 function getCsrfToken() {
   const value = `; ${document.cookie}`;
@@ -49,13 +54,24 @@ async function handleLoginSubmit(event) {
   const password = passwordInput ? passwordInput.value : '';
 
   try {
-    const res  = await fetch('/api/login', {
+    const res  = await fetch(`${API_BASE}/api/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
+    
+    if (!res.ok) {
+      let errMsg = 'Login failed.';
+      try {
+        const data = await res.json();
+        errMsg = data.error || errMsg;
+      } catch (e) {
+        errMsg = `Server error (${res.status})`;
+      }
+      throw new Error(errMsg);
+    }
+
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Login failed.');
 
     // Storage updates (token handled securely by HTTP-only cookie)
     localStorage.setItem('authUser', JSON.stringify(data.user));
@@ -86,7 +102,7 @@ async function handleLogout() {
   sessionStorage.removeItem('authToken');
   sessionStorage.removeItem('authUser');
   try {
-    await fetch('/api/logout', { 
+    await fetch(`${API_BASE}/api/logout`, { 
       method: 'POST',
       headers: {
         'X-CSRF-Token': getCsrfToken()

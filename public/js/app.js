@@ -8,7 +8,7 @@
 /* ===================================================================
    CONSTANTS & STATE CACHING
    =================================================================== */
-const CHAT_API_PROXY = '/api/chat';
+const CHAT_API_PROXY = typeof API_BASE !== 'undefined' ? `${API_BASE}/api/chat` : '/api/chat';
 
 let weekChartInstance = null;
 let pieChartInstance = null;

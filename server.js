@@ -219,14 +219,14 @@ app.post('/api/login', loginLimiter, async (req, res) => {
     res.cookie('authToken', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
       maxAge: 2 * 60 * 60 * 1000 // 2 hours
     });
 
     // Non-HttpOnly Cookie so frontend javascript can read it to submit CSRF header
     res.cookie('csrfToken', csrfToken, {
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
       maxAge: 2 * 60 * 60 * 1000 // 2 hours
     });
 
@@ -243,11 +243,11 @@ app.post('/api/logout', validateCsrf, (req, res) => {
   res.clearCookie('authToken', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
   });
   res.clearCookie('csrfToken', {
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
   });
   res.json({ success: true, message: 'Logged out successfully.' });
 });
