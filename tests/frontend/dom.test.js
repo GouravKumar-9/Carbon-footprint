@@ -23,8 +23,11 @@ function stripInlineScripts(html) {
 }
 
 // ---------------------------------------------------------------------------
-// Read app.js once at module load (external file, clean JS — no stripping needed)
+// Read auth.js and app.js once at module load
 // ---------------------------------------------------------------------------
+const AUTH_JS_PATH = path.resolve(__dirname, '../../public/js/auth.js');
+const AUTH_JS_CODE = fs.readFileSync(AUTH_JS_PATH, 'utf8');
+
 const APP_JS_PATH  = path.resolve(__dirname, '../../public/js/app.js');
 const APP_JS_CODE  = fs.readFileSync(APP_JS_PATH, 'utf8');
 
@@ -56,7 +59,21 @@ describe('DOM & Frontend SPA Integration Tests', () => {
         };
 
         // Mock Chart.js
-        win.Chart = class MockChart { constructor() {} };
+        win.Chart = class MockChart {
+          constructor() {
+            this.data = {
+              labels: [],
+              datasets: [{ data: [] }]
+            };
+          }
+          update() {}
+        };
+
+        // Mock global fetch
+        win.fetch = jest.fn().mockResolvedValue({
+          ok: true,
+          json: async () => ({})
+        });
 
         // Polyfill HTMLDialogElement
         if (!win.HTMLDialogElement) win.HTMLDialogElement = class {};
@@ -76,7 +93,8 @@ describe('DOM & Frontend SPA Integration Tests', () => {
     window   = dom.window;
     document = dom.window.document;
 
-    // Inject app.js flat at window scope (no IIFE — function declarations hoist)
+    // Inject auth.js and app.js flat at window scope (no IIFE — function declarations hoist)
+    window.eval(AUTH_JS_CODE);
     window.eval(APP_JS_CODE);
 
     // Pre-authenticate
@@ -160,12 +178,12 @@ describe('DOM & Frontend SPA Integration Tests', () => {
 
   // =========================================================================
   describe('Logout — clears sessionStorage', () => {
-    test('handleLogout() should clear auth token and user', () => {
+    test('handleLogout() should clear auth token and user', async () => {
       expect(window.sessionStorage.getItem('authToken')).toBe('mock-token');
 
       // handleLogout calls showToast which requires #toast elements
       window.showToast = jest.fn();
-      window.handleLogout();
+      await window.handleLogout();
 
       expect(window.sessionStorage.getItem('authToken')).toBeNull();
       expect(window.sessionStorage.getItem('authUser')).toBeNull();

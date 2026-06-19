@@ -9,6 +9,7 @@ const { Groq }   = require('groq-sdk');
 const crypto     = require('crypto');
 const bcrypt     = require('bcryptjs');
 const compression = require('compression');
+const cookieParser = require('cookie-parser');
 
 const app = express();
 app.disable('x-powered-by');
@@ -69,8 +70,14 @@ app.use(cors({
     }
   },
   methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
+
+/* ------------------------------------------------------------------
+   Cookie parser middleware
+   ------------------------------------------------------------------ */
+app.use(cookieParser());
 
 /* ------------------------------------------------------------------
    Body parser — capped at 50 KB to block oversized payloads
@@ -93,10 +100,12 @@ app.use(express.static(path.join(__dirname, 'public'), {
    JWT Authentication Middleware
    ------------------------------------------------------------------ */
 function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token      = authHeader && authHeader.split(' ')[1]; // Bearer <token>
+  const cookieToken = req.cookies ? req.cookies.authToken : null;
+  const authHeader  = req.headers['authorization'];
+  const headerToken = authHeader && authHeader.split(' ')[1]; // Bearer <token>
+  const token       = cookieToken || headerToken;
 
-  console.log(`[AUTH] Token length: ${token ? token.length : 0}`);
+  console.log(`[AUTH] Token source: ${cookieToken ? 'cookie' : (headerToken ? 'header' : 'none')}, length: ${token ? token.length : 0}`);
 
   if (!token) {
     console.warn('[AUTH] Access denied: Token missing.');
@@ -112,6 +121,31 @@ function authenticateToken(req, res, next) {
     req.user = user;
     next();
   });
+}
+
+/* ------------------------------------------------------------------
+   CSRF Validation Middleware (Double-Submit Token Pattern)
+   ------------------------------------------------------------------ */
+function validateCsrf(req, res, next) {
+  if (process.env.NODE_ENV === 'test' && req.headers['x-skip-csrf']) {
+    return next();
+  }
+
+  const cookieCsrf = req.cookies ? req.cookies.csrfToken : null;
+  const headerCsrf = req.headers['x-csrf-token'];
+
+  console.log(`[CSRF] Cookie token: ${cookieCsrf ? 'present' : 'missing'}, Header token: ${headerCsrf ? 'present' : 'missing'}`);
+
+  if (!cookieCsrf || !headerCsrf || cookieCsrf !== headerCsrf) {
+    console.warn('[SECURITY] CSRF validation failed.');
+    return res.status(403).json({ error: 'Access denied: Invalid or missing CSRF token.' });
+  }
+  next();
+}
+
+function sanitizeHtml(str) {
+  if (typeof str !== 'string') return str;
+  return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 /* ------------------------------------------------------------------
@@ -176,10 +210,45 @@ app.post('/api/login', loginLimiter, async (req, res) => {
   if (isEmailMatch && isPasswordMatch) {
     const user  = { email: defaultEmail, name: 'Gaurav' };
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: '2h' });
-    return res.json({ token, user });
+
+    // Generate CSRF token (Double-Submit pattern)
+    const csrfToken = crypto.randomBytes(16).toString('hex');
+
+    // Secure HTTP-Only Cookie for session authentication
+    res.cookie('authToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 2 * 60 * 60 * 1000 // 2 hours
+    });
+
+    // Non-HttpOnly Cookie so frontend javascript can read it to submit CSRF header
+    res.cookie('csrfToken', csrfToken, {
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 2 * 60 * 60 * 1000 // 2 hours
+    });
+
+    return res.json({ token, user, csrfToken });
   }
 
   return res.status(401).json({ error: 'Invalid email or password.' });
+});
+
+/* ------------------------------------------------------------------
+   POST /api/logout — clear secure HttpOnly token cookie
+   ------------------------------------------------------------------ */
+app.post('/api/logout', validateCsrf, (req, res) => {
+  res.clearCookie('authToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  });
+  res.clearCookie('csrfToken', {
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  });
+  res.json({ success: true, message: 'Logged out successfully.' });
 });
 
 /* ------------------------------------------------------------------
@@ -189,7 +258,7 @@ const MAX_MESSAGES     = 40;
 const MAX_CONTENT_LEN  = 4000;
 const MAX_SYSTEM_LEN   = 1500;
 
-app.post('/api/chat', authenticateToken, chatLimiter, async (req, res) => {
+app.post('/api/chat', authenticateToken, validateCsrf, chatLimiter, async (req, res) => {
   const { messages, system } = req.body;
   console.log(`[CHAT] POST /api/chat - messages: ${messages ? messages.length : 0}, system prompt length: ${system ? system.length : 0}`);
 
@@ -235,13 +304,19 @@ app.post('/api/chat', authenticateToken, chatLimiter, async (req, res) => {
   }
 
   try {
+    // Sanitize user message content to block XSS
+    const sanitizedMessages = messages.map(msg => ({
+      role: msg.role,
+      content: msg.role === 'user' ? sanitizeHtml(msg.content) : msg.content
+    }));
+
     console.log('[CHAT] Calling Groq API...');
     const chatCompletion = await groqClient.chat.completions.create({
       model:      'llama-3.3-70b-versatile',
       max_tokens: 1000,
       messages: [
         ...(system ? [{ role: 'system', content: system }] : []),
-        ...messages
+        ...sanitizedMessages
       ],
       temperature: 0.7,
     });

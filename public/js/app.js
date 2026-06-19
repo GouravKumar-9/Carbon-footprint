@@ -6,9 +6,79 @@
  */
 
 /* ===================================================================
-   CONSTANTS
+   CONSTANTS & STATE CACHING
    =================================================================== */
 const CHAT_API_PROXY = '/api/chat';
+
+let weekChartInstance = null;
+let pieChartInstance = null;
+let profileChartInstance = null;
+
+// Persisted local storage functions
+function getDailyLogs() {
+  const logs = localStorage.getItem('carbontrack_daily_logs');
+  return logs ? JSON.parse(logs) : [];
+}
+function saveDailyLog(co2Value) {
+  const logs = getDailyLogs();
+  logs.push({
+    date: new Date().toISOString().split('T')[0],
+    co2: parseFloat(co2Value)
+  });
+  localStorage.setItem('carbontrack_daily_logs', JSON.stringify(logs));
+  updateDailyLogsUI();
+}
+function updateDailyLogsUI() {
+  const logs = getDailyLogs();
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todaySum = logs
+    .filter(l => l.date === todayStr)
+    .reduce((sum, l) => sum + l.co2, 0);
+
+  const displayVal = todaySum > 0 ? todaySum.toFixed(1) : '8.4';
+  const tv = document.getElementById('today-val');
+  if (tv) tv.textContent = displayVal;
+
+  updateWeeklyChartFromLogs(logs);
+}
+function updateWeeklyChartFromLogs(logs) {
+  if (!weekChartInstance) return;
+  const labels = [];
+  const data = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    const labelStr = d.toLocaleDateString('en-IN', { weekday: 'short' });
+    labels.push(labelStr);
+
+    const sum = logs
+      .filter(l => l.date === dateStr)
+      .reduce((acc, l) => acc + l.co2, 0);
+    const dummyData = [9.2, 7.8, 8.5, 6.9, 10.1, 7.3, 8.4];
+    data.push(sum > 0 ? sum : dummyData[i] || 5.0);
+  }
+  weekChartInstance.data.labels = labels;
+  weekChartInstance.data.datasets[0].data = data;
+  weekChartInstance.update();
+
+  const weekChartEl = document.getElementById('weekChart');
+  if (weekChartEl) {
+    const weekTable = weekChartEl.nextSibling;
+    if (weekTable && weekTable.className === 'chart-data-table') {
+      weekTable.innerHTML = `<caption>Weekly CO₂ emissions data</caption><thead><tr><th>Day</th><th>kg CO₂</th></tr></thead><tbody>${labels.map((d,i)=>`<tr><td>${d}</td><td>${data[i]}</td></tr>`).join('')}</tbody>`;
+    }
+  }
+}
+// Debounce helper for range input calculations
+function debounce(func, delay) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), delay);
+  };
+}
+const debouncedUpdateCalc = debounce(updateCalc, 150);
 
 /* ===================================================================
    SPA ROUTING — with a11y: title update, live region, focus management
@@ -130,14 +200,14 @@ const weekLabels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const weekData   = [9.2,7.8,8.5,6.9,10.1,7.3,8.4];
 const weekChart  = document.getElementById('weekChart');
 if (weekChart) {
-  new Chart(weekChart, {
+  weekChartInstance = new Chart(weekChart, {
     type: 'bar',
     data: {
       labels: weekLabels,
       datasets: [{
         label: 'kg CO₂',
         data: weekData,
-        backgroundColor: ['#a5d6a7','#66bb6a','#81c784','#4caf50','#ef5350','#66bb6a','#81c784'],
+        backgroundColor: ['#2dd4bf', '#14b8a6', '#0f766e', '#115e59', '#f43f5e', '#14b8a6', '#2dd4bf'],
         borderRadius: 6, borderWidth: 0
       }]
     },
@@ -145,8 +215,15 @@ if (weekChart) {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { callback: v => v + 'kg', font: { size: 11 } } },
-        x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+        y: { 
+          beginAtZero: true, 
+          grid: { color: 'rgba(255, 255, 255, 0.08)' }, 
+          ticks: { color: '#9ca3af', callback: v => v + 'kg', font: { size: 11 } } 
+        },
+        x: { 
+          grid: { display: false }, 
+          ticks: { color: '#9ca3af', font: { size: 11 } } 
+        }
       }
     }
   });
@@ -163,11 +240,11 @@ const pieLabels = ['Transport','Food','Energy','Shopping'];
 const pieData   = [45, 30, 15, 10];
 const pieChart  = document.getElementById('pieChart');
 if (pieChart) {
-  new Chart(pieChart, {
+  pieChartInstance = new Chart(pieChart, {
     type: 'doughnut',
     data: {
       labels: pieLabels,
-      datasets: [{ data: pieData, backgroundColor: ['#4caf50','#2e7d32','#f59e0b','#ef4444'], borderWidth: 0 }]
+      datasets: [{ data: pieData, backgroundColor: ['#2dd4bf', '#10b981', '#fbbf24', '#f43f5e'], borderWidth: 0 }]
     },
     options: {
       responsive: true, maintainAspectRatio: false, cutout: '68%',
@@ -260,8 +337,66 @@ setInterval(() => {
 /* ===================================================================
    CALCULATOR
    =================================================================== */
+function saveInputsToStorage() {
+  const inputs = {
+    car: document.getElementById('sl-car').value,
+    bike: document.getElementById('sl-bike').value,
+    fly: document.getElementById('sl-fly').value,
+    train: document.getElementById('sl-train').value,
+    elec: document.getElementById('sl-elec').value,
+    lpg: document.getElementById('sl-lpg').value,
+    meat: document.getElementById('sl-meat').value,
+    dairy: document.getElementById('sl-dairy').value,
+    cloth: document.getElementById('sl-cloth').value,
+    elects: document.getElementById('sl-elects').value,
+  };
+  localStorage.setItem('carbontrack_inputs', JSON.stringify(inputs));
+}
+
+function loadInputsFromStorage() {
+  const saved = localStorage.getItem('carbontrack_inputs');
+  if (saved) {
+    try {
+      const inputs = JSON.parse(saved);
+      Object.keys(inputs).forEach(key => {
+        const el = document.getElementById('sl-' + key);
+        if (el) el.value = inputs[key];
+      });
+    } catch(e) {
+      console.error('Failed to parse inputs from storage', e);
+    }
+  }
+}
+
+function updateCategoryGoals(results) {
+  const cats = [
+    { name: 'Transport', used: results.transport, goal: 3.5, color: results.transport <= 3.5 ? '#2e7d32' : '#dc2626', status: results.transport <= 3.5 ? 'On track' : 'Above target' },
+    { name: 'Food',      used: results.food,      goal: 2.5, color: results.food <= 2.5 ? '#2e7d32' : '#dc2626', status: results.food <= 2.5 ? 'On track' : 'Above target' },
+    { name: 'Energy',    used: results.energy,    goal: 1.5, color: results.energy <= 1.5 ? '#2e7d32' : '#dc2626', status: results.energy <= 1.5 ? 'On track' : 'Above target' },
+    { name: 'Shopping',  used: results.shopping,  goal: 0.5, color: results.shopping <= 0.5 ? '#2e7d32' : '#dc2626', status: results.shopping <= 0.5 ? 'On track' : 'Above target' },
+  ];
+  const cg = document.getElementById('cat-goals');
+  if (cg) {
+    cg.innerHTML = cats.map(c => {
+      const pct = Math.min(100, Math.round(c.used / (c.goal || 1) * 100));
+      return `<div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+          <span>${c.name}</span>
+          <span style="color:${c.color}">${c.used}t / ${c.goal}t <span class="sr-only">(${c.status})</span></span>
+        </div>
+        <div class="prog-bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${c.name}: ${c.used}t of ${c.goal}t goal (${c.status})">
+          <div class="prog-fill" style="width:${pct}%;background:${c.color}"></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+}
+
 function updateCalc() {
-  const car    = +document.getElementById('sl-car').value;
+  const carEl = document.getElementById('sl-car');
+  if (!carEl) return;
+
+  const car    = +carEl.value;
   const bike   = +document.getElementById('sl-bike').value;
   const fly    = +document.getElementById('sl-fly').value;
   const train  = +document.getElementById('sl-train').value;
@@ -289,7 +424,7 @@ function updateCalc() {
   const pct = Math.min(100, Math.round(results.total / 7 * 100));
   const bar = document.getElementById('calc-meter');
   bar.style.width = pct + '%';
-  bar.style.background = results.total <= 2.5 ? '#4caf50' : results.total <= 4 ? '#f59e0b' : '#ef4444';
+  bar.style.background = results.total <= 2.5 ? '#2e7d32' : results.total <= 4 ? '#d97706' : '#dc2626';
   const lbl = results.total <= 2.5
     ? 'Below 1.5°C target (2.5t) — excellent!'
     : results.total <= 3.8
@@ -303,10 +438,21 @@ function updateCalc() {
     `<div class="rb-row"><span>${n}</span><span>${v} t</span></div><div class="rb-bar"><div class="rb-fill" style="width:${Math.min(100, Math.round(v / (results.total || 1) * 100))}%"></div></div>`
   ).join('');
 
+  // Update Category Goals on Dashboard
+  updateCategoryGoals(results);
+
+  // Update dashboard pace value
+  const paceValEl = document.querySelector('.metric-grid .m-card:nth-child(3) .m-value');
+  if (paceValEl) paceValEl.textContent = results.total;
+
   if (typeof updateChatStatsUI === 'function') {
     updateChatStatsUI();
   }
+
+  saveInputsToStorage();
 }
+
+loadInputsFromStorage();
 updateCalc();
 
 /* ===================================================================
@@ -643,12 +789,23 @@ async function sendChat() {
 
   const typingEl = document.getElementById(typingId);
   try {
-    const token = sessionStorage.getItem('authToken');
+    const token = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
+    const headers = { 
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': typeof getCsrfToken === 'function' ? getCsrfToken() : ''
+    };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
     const res = await fetch(CHAT_API_PROXY, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': token ? `Bearer ${token}` : '' },
+      headers,
       body: JSON.stringify({ system: getDynamicSystemPrompt(), messages: chatHistory })
     });
+
+    if (res.status === 401 || res.status === 403) {
+      handleLogout();
+      return;
+    }
 
     if (res.ok) {
       const responseData = await res.json();
@@ -809,8 +966,7 @@ function submitLog() {
   closeLogModal();
   const co2 = document.getElementById('log-co2') ? document.getElementById('log-co2').textContent : '0';
   showToast('Activity logged! 🌿', `${co2} kg CO₂ added to today's total. Keep it green!`);
-  const tv = document.getElementById('today-val');
-  if (tv) tv.textContent = co2;
+  saveDailyLog(co2);
 }
 
 // Focus trap inside modal — cycle focus with Tab/Shift+Tab (WCAG 2.1.2)
@@ -865,95 +1021,6 @@ function showToast(title, body) {
   }, 4000);
 }
 
-/* ===================================================================
-   AUTHENTICATION
-   =================================================================== */
-function isAuthenticated() {
-  return !!sessionStorage.getItem('authToken');
-}
-
-function updateAuthUI() {
-  const loggedIn = isAuthenticated();
-  document.querySelectorAll('.private-link').forEach(el => {
-    el.style.display = loggedIn ? '' : 'none';
-  });
-  const loginBtn = document.getElementById('nav-login-btn');
-  if (loginBtn) loginBtn.style.display = loggedIn ? 'none' : '';
-
-  const userJson = sessionStorage.getItem('authUser');
-  if (loggedIn && userJson) {
-    try {
-      const user = JSON.parse(userJson);
-      const greetingEl = document.querySelector('.dash-greeting');
-      if (greetingEl) greetingEl.textContent = `Good morning, ${user.name || 'Gaurav'} 👋`;
-    } catch (e) {
-      console.error(e);
-    }
-  }
-}
-
-async function handleLoginSubmit(event) {
-  event.preventDefault();
-  const emailInput    = document.getElementById('login-email');
-  const passwordInput = document.getElementById('login-password');
-  const errorEl       = document.getElementById('login-error-msg');
-
-  if (emailInput)    emailInput.removeAttribute('aria-invalid');
-  if (passwordInput) passwordInput.removeAttribute('aria-invalid');
-  if (errorEl)       errorEl.style.display = 'none';
-
-  const email    = emailInput    ? emailInput.value    : '';
-  const password = passwordInput ? passwordInput.value : '';
-
-  try {
-    const res  = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Login failed.');
-
-    sessionStorage.setItem('authToken', data.token);
-    sessionStorage.setItem('authUser', JSON.stringify(data.user));
-    showToast('Welcome back! 🌿', `Logged in as ${data.user.name}.`);
-    if (emailInput)    emailInput.value    = '';
-    if (passwordInput) passwordInput.value = '';
-    updateAuthUI();
-    showPage('dashboard');
-  } catch (err) {
-    console.error('Login error:', err);
-    if (errorEl) {
-      errorEl.textContent = err.message || 'Invalid email or password.';
-      errorEl.style.display = 'block';
-      if (emailInput)    emailInput.setAttribute('aria-invalid', 'true');
-      if (passwordInput) passwordInput.setAttribute('aria-invalid', 'true');
-    }
-  }
-}
-
-function handleLogout() {
-  sessionStorage.removeItem('authToken');
-  sessionStorage.removeItem('authUser');
-  showToast('Logged out 🌿', 'You have successfully logged out.');
-  updateAuthUI();
-  showPage('landing');
-}
-
-function togglePasswordVisibility(event) {
-  const input = document.getElementById('login-password');
-  const btn   = event.currentTarget || event.target;
-  if (input.type === 'password') {
-    input.type = 'text';
-    btn.textContent = '🙈';
-    btn.setAttribute('aria-label', 'Hide password');
-  } else {
-    input.type = 'password';
-    btn.textContent = '👁️';
-    btn.setAttribute('aria-label', 'Show password');
-  }
-}
-
 function toggleSetting(btn) {
   btn.classList.toggle('on');
   const isOn = btn.classList.contains('on');
@@ -994,18 +1061,34 @@ const profileLabels = ['Jan','Feb','Mar','Apr','May','Jun'];
 const profileData   = [0.42,0.39,0.38,0.34,0.31,0.29];
 const profileChartEl = document.getElementById('profileChart');
 if (profileChartEl) {
-  new Chart(profileChartEl, {
+  profileChartInstance = new Chart(profileChartEl, {
     type: 'line',
     data: {
       labels: profileLabels,
-      datasets: [{ data: profileData, borderColor: '#4caf50', backgroundColor: 'rgba(76,175,80,0.1)', fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: '#2e7d32', borderWidth: 2 }]
+      datasets: [{ 
+        data: profileData, 
+        borderColor: '#2dd4bf', 
+        backgroundColor: 'rgba(45, 212, 191, 0.1)', 
+        fill: true, 
+        tension: 0.4, 
+        pointRadius: 4, 
+        pointBackgroundColor: '#14b8a6', 
+        borderWidth: 2 
+      }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        y: { beginAtZero: false, ticks: { callback: v => v + 't', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.04)' } },
-        x: { ticks: { font: { size: 10 } }, grid: { display: false } }
+        y: { 
+          beginAtZero: false, 
+          ticks: { color: '#9ca3af', callback: v => v + 't', font: { size: 10 } }, 
+          grid: { color: 'rgba(255, 255, 255, 0.08)' } 
+        },
+        x: { 
+          ticks: { color: '#9ca3af', font: { size: 10 } }, 
+          grid: { display: false } 
+        }
       }
     }
   });
@@ -1058,3 +1141,6 @@ setInterval(() => {
   eventIdx++;
 }, 25000);
 setTimeout(() => showToast('Welcome back, Gaurav! 🌿', 'You\'re on a 12-day green streak. Keep going!'), 5000);
+
+// Load persisted logged data on startup
+updateDailyLogsUI();

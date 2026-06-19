@@ -54,6 +54,7 @@ describe('Express Server Integration & Authentication Tests', () => {
         .post('/api/chat')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-skip-csrf', 'true')
         .send({ messages: [] });
       expect(allowedOriginResponse.headers['access-control-allow-origin']).toBe('http://localhost:3000');
 
@@ -61,6 +62,7 @@ describe('Express Server Integration & Authentication Tests', () => {
         .post('/api/chat')
         .set('Origin', 'http://malicious.com')
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-skip-csrf', 'true')
         .send({ messages: [] });
       expect(disallowedOriginResponse.headers['access-control-allow-origin']).toBeUndefined();
     });
@@ -71,6 +73,7 @@ describe('Express Server Integration & Authentication Tests', () => {
       const response = await request(app)
         .post('/api/chat')
         .set('Origin', 'http://localhost:3000')
+        .set('x-skip-csrf', 'true')
         .send({ messages: [] });
       expect(response.status).toBe(401);
       expect(response.body.error).toContain('Token missing');
@@ -81,6 +84,7 @@ describe('Express Server Integration & Authentication Tests', () => {
         .post('/api/chat')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', 'Bearer invalid-token-string')
+        .set('x-skip-csrf', 'true')
         .send({ messages: [] });
       expect(response.status).toBe(403);
       expect(response.body.error).toContain('Invalid or expired token');
@@ -99,6 +103,8 @@ describe('Express Server Integration & Authentication Tests', () => {
       expect(response.status).toBe(200);
       expect(response.body.token).toBeDefined();
       expect(response.body.user.name).toBe('Gaurav');
+      expect(response.headers['set-cookie']).toBeDefined();
+      expect(response.headers['set-cookie'][0]).toContain('authToken=');
     });
 
     test('should be case-insensitive for email username', async () => {
@@ -166,6 +172,24 @@ describe('Express Server Integration & Authentication Tests', () => {
         .post('/api/chat')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-skip-csrf', 'true')
+        .send({
+          system: 'Custom instructions',
+          messages: [
+            { role: 'user', content: 'Tell me about energy conservation.' }
+          ]
+        });
+      
+      expect(response.status).toBe(200);
+      expect(response.body.choices[0].message.content).toContain('public transport');
+    });
+
+    test('should succeed and return AI response when authorized via HttpOnly cookie', async () => {
+      const response = await request(app)
+        .post('/api/chat')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', [`authToken=${testToken}`])
+        .set('x-skip-csrf', 'true')
         .send({
           system: 'Custom instructions',
           messages: [
@@ -182,6 +206,7 @@ describe('Express Server Integration & Authentication Tests', () => {
         .post('/api/chat')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-skip-csrf', 'true')
         .send({
           system: 'instructions',
           messages: 'not-an-array'
@@ -196,6 +221,7 @@ describe('Express Server Integration & Authentication Tests', () => {
         .post('/api/chat')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-skip-csrf', 'true')
         .send({
           messages: [
             { role: 'attacker', content: 'bad role' }
@@ -214,6 +240,7 @@ describe('Express Server Integration & Authentication Tests', () => {
           .post('/api/chat')
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${testToken}`)
+          .set('x-skip-csrf', 'true')
           .set('x-test-rate-limit', 'true')
           .send({ messages: [] });
       }
@@ -221,6 +248,7 @@ describe('Express Server Integration & Authentication Tests', () => {
         .post('/api/chat')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-skip-csrf', 'true')
         .set('x-test-rate-limit', 'true')
         .send({ messages: [] });
 
@@ -244,6 +272,7 @@ describe('Express Server Integration & Authentication Tests', () => {
       const response = await request(app)
         .post('/api/chat')
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-skip-csrf', 'true')
         .send(largeBody);
       // Express returns 413 for body-too-large
       expect([400, 413]).toContain(response.status);
@@ -257,6 +286,7 @@ describe('Express Server Integration & Authentication Tests', () => {
       const response = await request(app)
         .post('/api/chat')
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-skip-csrf', 'true')
         .send({ messages });
       expect(response.status).toBe(400);
       expect(response.body.error).toContain('Too many messages');
@@ -266,6 +296,7 @@ describe('Express Server Integration & Authentication Tests', () => {
       const response = await request(app)
         .post('/api/chat')
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-skip-csrf', 'true')
         .send({ messages: [{ role: 'user', content: 'a'.repeat(4001) }] });
       expect(response.status).toBe(400);
       expect(response.body.error).toContain('Message content too long');
@@ -275,6 +306,7 @@ describe('Express Server Integration & Authentication Tests', () => {
       const response = await request(app)
         .post('/api/chat')
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-skip-csrf', 'true')
         .send({
           system: 's'.repeat(1501),
           messages: [{ role: 'user', content: 'hello' }]
@@ -289,6 +321,60 @@ describe('Express Server Integration & Authentication Tests', () => {
         .post('/api/login')
         .send({ email: longEmail, password: 'greenplanet2026' });
       expect(response.status).toBe(400);
+    });
+  });
+
+  describe('CSRF Validation Protection Integration', () => {
+    test('should return 403 when CSRF cookie/header is missing', async () => {
+      const response = await request(app)
+        .post('/api/chat')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${testToken}`)
+        .send({ messages: [] });
+      expect(response.status).toBe(403);
+      expect(response.body.error).toContain('CSRF');
+    });
+
+    test('should return 403 when CSRF cookie and header mismatch', async () => {
+      const response = await request(app)
+        .post('/api/chat')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${testToken}`)
+        .set('Cookie', ['csrfToken=token-a'])
+        .set('x-csrf-token', 'token-b')
+        .send({ messages: [] });
+      expect(response.status).toBe(403);
+    });
+
+    test('should succeed when CSRF cookie and header match', async () => {
+      const response = await request(app)
+        .post('/api/chat')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${testToken}`)
+        .set('Cookie', ['csrfToken=valid-token'])
+        .set('x-csrf-token', 'valid-token')
+        .send({ messages: [] });
+      expect(response.status).toBe(200);
+    });
+  });
+
+  describe('POST /api/logout', () => {
+    test('should fail logout if CSRF is missing', async () => {
+      const response = await request(app)
+        .post('/api/logout')
+        .send();
+      expect(response.status).toBe(403);
+    });
+
+    test('should clear cookies on valid logout', async () => {
+      const response = await request(app)
+        .post('/api/logout')
+        .set('Cookie', ['csrfToken=logout-token'])
+        .set('x-csrf-token', 'logout-token')
+        .send();
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.headers['set-cookie']).toBeDefined();
     });
   });
 });

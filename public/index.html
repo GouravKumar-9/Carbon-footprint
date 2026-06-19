@@ -10,20 +10,20 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- External stylesheet (replaces inline <style>) -->
-<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/css/main.css?v=2.0">
 </head>
 <body>
 
 <div id="route-announcer" class="sr-only" aria-live="polite"></div>
 
 <!-- TICKER -->
-<div class="ticker" style="position:fixed;top:0;left:0;right:0;z-index:200">
+<div class="ticker">
   <div class="ticker-inner" id="ticker-inner"></div>
 </div>
 
 <!-- NAV -->
-<nav style="top:32px">
-  <button class="nav-logo" onclick="showPage('landing')" aria-label="CarbonTrack India home" style="background:none;border:none;text-align:left;padding:0;">
+<nav>
+  <button class="nav-logo" onclick="showPage('landing')" aria-label="CarbonTrack India home">
     <span>🌿</span> CarbonTrack India
   </button>
   <div class="nav-links">
@@ -37,7 +37,7 @@
     <button class="nav-link private-link" data-page="profile" onclick="showPage('profile')" style="display:none">Profile</button>
   </div>
   <button class="nav-link private-link" id="nav-logout-btn" onclick="handleLogout()" style="display:none;margin-right:8px">Logout</button>
-  <button class="nav-link private-link" id="nav-log-btn" onclick="showLogModal()" style="display:none;margin-left:8px;padding:7px 14px;background:var(--green-50);color:var(--green-600);border:1.5px solid var(--green-200);border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;transition:background 0.15s;font-family:Inter,sans-serif">+ Log activity</button>
+  <button class="nav-link private-link nav-log-btn" id="nav-log-btn" onclick="showLogModal()" style="display:none;margin-left:8px">+ Log activity</button>
   <button class="nav-cta public-cta" id="nav-login-btn" onclick="showPage('login')" style="margin-left:8px">Log In</button>
   <button class="nav-cta private-link" id="nav-dashboard-cta" onclick="showPage('dashboard')" style="display:none">🌿 Start tracking</button>
 </nav>
@@ -268,25 +268,25 @@
         <div class="card">
           <div class="calc-section">
             <div class="calc-section-title">🚗 Transport</div>
-            <div class="sl-row"><span class="sl-icon" aria-hidden="true">🚗</span><label for="sl-car" class="sl-label">Car (km/day)</label><input type="range" class="sl-input" min="0" max="150" value="25" step="1" id="sl-car" oninput="updateCalc()"><span class="sl-val" id="sv-car">25 km</span></div>
-            <div class="sl-row"><span class="sl-icon" aria-hidden="true">🛵</span><label for="sl-bike" class="sl-label">Bike/scooter (km/day)</label><input type="range" class="sl-input" min="0" max="80" value="10" step="1" id="sl-bike" oninput="updateCalc()"><span class="sl-val" id="sv-bike">10 km</span></div>
-            <div class="sl-row"><span class="sl-icon" aria-hidden="true">✈️</span><label for="sl-fly" class="sl-label">Flights per year</label><input type="range" class="sl-input" min="0" max="20" value="2" step="1" id="sl-fly" oninput="updateCalc()"><span class="sl-val" id="sv-fly">2 flights</span></div>
-            <div class="sl-row"><span class="sl-icon" aria-hidden="true">🚆</span><label for="sl-train" class="sl-label">Train trips/month</label><input type="range" class="sl-input" min="0" max="30" value="4" step="1" id="sl-train" oninput="updateCalc()"><span class="sl-val" id="sv-train">4 trips</span></div>
+            <div class="sl-row"><span class="sl-icon" aria-hidden="true">🚗</span><label for="sl-car" class="sl-label">Car (km/day)</label><input type="range" class="sl-input" min="0" max="150" value="25" step="1" id="sl-car" oninput="debouncedUpdateCalc()"><span class="sl-val" id="sv-car">25 km</span></div>
+            <div class="sl-row"><span class="sl-icon" aria-hidden="true">🛵</span><label for="sl-bike" class="sl-label">Bike/scooter (km/day)</label><input type="range" class="sl-input" min="0" max="80" value="10" step="1" id="sl-bike" oninput="debouncedUpdateCalc()"><span class="sl-val" id="sv-bike">10 km</span></div>
+            <div class="sl-row"><span class="sl-icon" aria-hidden="true">✈️</span><label for="sl-fly" class="sl-label">Flights per year</label><input type="range" class="sl-input" min="0" max="20" value="2" step="1" id="sl-fly" oninput="debouncedUpdateCalc()"><span class="sl-val" id="sv-fly">2 flights</span></div>
+            <div class="sl-row"><span class="sl-icon" aria-hidden="true">🚆</span><label for="sl-train" class="sl-label">Train trips/month</label><input type="range" class="sl-input" min="0" max="30" value="4" step="1" id="sl-train" oninput="debouncedUpdateCalc()"><span class="sl-val" id="sv-train">4 trips</span></div>
           </div>
           <div class="calc-section">
             <div class="calc-section-title">🏠 Home energy</div>
-            <div class="sl-row"><span class="sl-icon" aria-hidden="true">⚡</span><label for="sl-elec" class="sl-label">Electricity (kWh/month)</label><input type="range" class="sl-input" min="50" max="1000" value="180" step="10" id="sl-elec" oninput="updateCalc()"><span class="sl-val" id="sv-elec">180 kWh</span></div>
-            <div class="sl-row"><span class="sl-icon" aria-hidden="true">🔥</span><label for="sl-lpg" class="sl-label">LPG cylinders/month</label><input type="range" class="sl-input" min="0" max="6" value="1" step="0.5" id="sl-lpg" oninput="updateCalc()"><span class="sl-val" id="sv-lpg">1 cyl</span></div>
+            <div class="sl-row"><span class="sl-icon" aria-hidden="true">⚡</span><label for="sl-elec" class="sl-label">Electricity (kWh/month)</label><input type="range" class="sl-input" min="50" max="1000" value="180" step="10" id="sl-elec" oninput="debouncedUpdateCalc()"><span class="sl-val" id="sv-elec">180 kWh</span></div>
+            <div class="sl-row"><span class="sl-icon" aria-hidden="true">🔥</span><label for="sl-lpg" class="sl-label">LPG cylinders/month</label><input type="range" class="sl-input" min="0" max="6" value="1" step="0.5" id="sl-lpg" oninput="debouncedUpdateCalc()"><span class="sl-val" id="sv-lpg">1 cyl</span></div>
           </div>
           <div class="calc-section">
             <div class="calc-section-title">🍽️ Food & diet</div>
-            <div class="sl-row"><span class="sl-icon" aria-hidden="true">🥩</span><label for="sl-meat" class="sl-label">Meat meals per week</label><input type="range" class="sl-input" min="0" max="21" value="5" step="1" id="sl-meat" oninput="updateCalc()"><span class="sl-val" id="sv-meat">5 meals</span></div>
-            <div class="sl-row"><span class="sl-icon" aria-hidden="true">🐄</span><label for="sl-dairy" class="sl-label">Dairy portions per day</label><input type="range" class="sl-input" min="0" max="10" value="2" step="1" id="sl-dairy" oninput="updateCalc()"><span class="sl-val" id="sv-dairy">2 portions</span></div>
+            <div class="sl-row"><span class="sl-icon" aria-hidden="true">🥩</span><label for="sl-meat" class="sl-label">Meat meals per week</label><input type="range" class="sl-input" min="0" max="21" value="5" step="1" id="sl-meat" oninput="debouncedUpdateCalc()"><span class="sl-val" id="sv-meat">5 meals</span></div>
+            <div class="sl-row"><span class="sl-icon" aria-hidden="true">🐄</span><label for="sl-dairy" class="sl-label">Dairy portions per day</label><input type="range" class="sl-input" min="0" max="10" value="2" step="1" id="sl-dairy" oninput="debouncedUpdateCalc()"><span class="sl-val" id="sv-dairy">2 portions</span></div>
           </div>
           <div class="calc-section">
             <div class="calc-section-title">🛍️ Shopping & lifestyle</div>
-            <div class="sl-row"><span class="sl-icon" aria-hidden="true">👕</span><label for="sl-cloth" class="sl-label">New clothes/month</label><input type="range" class="sl-input" min="0" max="20" value="3" step="1" id="sl-cloth" oninput="updateCalc()"><span class="sl-val" id="sv-cloth">3 items</span></div>
-            <div class="sl-row"><span class="sl-icon" aria-hidden="true">📱</span><label for="sl-elects" class="sl-label">Electronics/year (₹k)</label><input type="range" class="sl-input" min="0" max="200" value="20" step="5" id="sl-elects" oninput="updateCalc()"><span class="sl-val" id="sv-elects">₹20k</span></div>
+            <div class="sl-row"><span class="sl-icon" aria-hidden="true">👕</span><label for="sl-cloth" class="sl-label">New clothes/month</label><input type="range" class="sl-input" min="0" max="20" value="3" step="1" id="sl-cloth" oninput="debouncedUpdateCalc()"><span class="sl-val" id="sv-cloth">3 items</span></div>
+            <div class="sl-row"><span class="sl-icon" aria-hidden="true">📱</span><label for="sl-elects" class="sl-label">Electronics/year (₹k)</label><input type="range" class="sl-input" min="0" max="200" value="20" step="5" id="sl-elects" oninput="debouncedUpdateCalc()"><span class="sl-val" id="sv-elects">₹20k</span></div>
           </div>
         </div>
       </div>
@@ -578,7 +578,8 @@
 </div>
 
 <!-- External app script (replaces inline scripts, enables caching & CSP) -->
-<script src="/js/app.js" defer></script>
+<script src="/js/auth.js?v=2.0" defer></script>
+<script src="/js/app.js?v=2.0" defer></script>
 
 <!-- ===== PROFILE PAGE ===== -->
 <div class="page" id="page-profile">
